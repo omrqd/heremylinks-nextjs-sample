@@ -1,0 +1,390 @@
+.loginContainer {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* Left Side - Form */
+.loginLeft {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    padding: 40px;
+    max-width: 50%;
+}
+
+.loginContent {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.logoLink {
+    display: inline-block;
+    margin-bottom: 60px;
+}
+
+.logo {
+    height: 36px;
+    width: auto;
+    display: block;
+}
+
+.loginFormWrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.loginTitle {
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    line-height: 1.2;
+}
+
+.loginSubtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+    font-weight: 400;
+    transition: opacity 0.3s ease;
+}
+
+.loginForm {
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.formStep {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.formStepHidden {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    transform: translateX(30px);
+    pointer-events: none;
+}
+
+.formStepExit {
+    opacity: 0;
+    transform: translateX(-30px);
+    pointer-events: none;
+}
+
+.formStepEnter {
+    animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.formGroup {
+    margin-bottom: 16px;
+}
+
+.userEmailDisplay {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.userEmailDisplay span {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.editEmailBtn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.editEmailBtn:hover {
+    color: var(--text-primary);
+}
+
+.editEmailBtn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.formInput {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: #ffffff;
+    font-family: var(--font-family);
+    transition: all 0.2s ease;
+    color: var(--text-primary);
+    font-weight: 400;
+}
+
+.formInput::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+.formInput:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.btnPrimary {
+    width: 100%;
+    padding: 16px 24px;
+    background: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+    margin-top: 8px;
+}
+
+.btnPrimary:hover {
+    background: #1a1a1a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btnPrimary:active {
+    transform: translateY(0);
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 24px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.divider span {
+    padding: 0 16px;
+}
+
+.socialLogin {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.btnSocial {
+    width: 100%;
+    padding: 14px 24px;
+    background: #ffffff;
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.btnSocial:hover {
+    border-color: var(--primary-color);
+    background: #fafafa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.btnSocial:active {
+    transform: translateY(0);
+}
+
+.btnSocial svg {
+    flex-shrink: 0;
+}
+
+.loginFooter {
+    margin-top: auto;
+    padding-top: 24px;
+}
+
+.forgotLinks {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.separator {
+    color: var(--text-secondary);
+}
+
+.linkPurple {
+    color: var(--purple-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.linkPurple:hover {
+    color: var(--purple-hover);
+    text-decoration: underline;
+}
+
+.signupText {
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-secondary);
+}
+
+.signupText .linkPurple {
+    font-weight: 600;
+}
+
+/* Right Side - Image */
+.loginRight {
+    flex: 1;
+    background: #2563eb;
+    position: relative;
+    overflow: hidden;
+    max-width: 50%;
+}
+
+.loginImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 1024px) {
+    .loginLeft {
+        max-width: 55%;
+    }
+    
+    .loginRight {
+        max-width: 45%;
+    }
+    
+    .loginTitle {
+        font-size: 36px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .loginContainer {
+        flex-direction: column;
+    }
+    
+    .loginLeft {
+        max-width: 100%;
+        padding: 24px;
+        min-height: 100vh;
+    }
+    
+    .loginRight {
+        display: none;
+    }
+    
+    .loginContent {
+        max-width: 100%;
+    }
+    
+    .logoLink {
+        margin-bottom: 40px;
+    }
+    
+    .loginTitle {
+        font-size: 32px;
+    }
+    
+    .loginSubtitle {
+        margin-bottom: 32px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .loginLeft {
+        padding: 20px;
+    }
+    
+    .loginTitle {
+        font-size: 28px;
+    }
+    
+    .loginSubtitle {
+        font-size: 14px;
+    }
+    
+    .formInput {
+        padding: 14px 16px;
+        font-size: 14px;
+    }
+    
+    .btnPrimary,
+    .btnSocial {
+        padding: 14px 20px;
+        font-size: 14px;
+    }
+    
+    .forgotLinks {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .separator {
+        display: none;
+    }
+}
+
