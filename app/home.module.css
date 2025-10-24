@@ -196,6 +196,8 @@
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     position: relative;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .linkInputWrapper:focus-within {
@@ -223,6 +225,8 @@
     padding: 16px 8px;
     outline: none;
     font-family: var(--font-family);
+    min-width: 0;
+    width: 100%;
 }
 
 .linkInput::placeholder {
@@ -579,6 +583,7 @@
     width: 100%;
     max-width: 650px;
     margin-bottom: 40px;
+    box-sizing: border-box;
 }
 
 .inputGroup {
@@ -590,6 +595,8 @@
     padding: 0 25px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .inputGroup:focus-within {
@@ -615,6 +622,8 @@
     font-family: var(--font-family);
     font-weight: 600;
     outline: none;
+    min-width: 0;
+    width: 100%;
 }
 
 .getStartedInput::placeholder {
@@ -842,11 +851,13 @@
         padding: 30px 20px;
         min-height: auto;
         gap: 40px;
+        overflow-x: hidden;
     }
     
     .heroSectionText {
         max-width: 100%;
         text-align: left;
+        width: 100%;
     }
     
     .heroSectionImage {
@@ -856,15 +867,33 @@
     
     .createYourLink {
         max-width: 100%;
+        width: 100%;
     }
     
     .linkInputWrapper {
         width: 100%;
+        max-width: 100%;
+        padding: 0 8px 0 16px;
+        box-sizing: border-box;
+    }
+    
+    .linkPrefix {
+        font-size: 13px;
+        margin-right: 2px;
+    }
+    
+    .linkInput {
+        font-size: 13px;
+        padding: 14px 4px;
+        min-width: 0;
+        flex: 1;
     }
     
     .linkButtonArrow {
         width: 44px;
         height: 44px;
+        margin-left: 4px;
+        flex-shrink: 0;
     }
     
     .linkButtonArrow svg {
@@ -902,10 +931,20 @@
     
     .getStartedForm {
         flex-direction: column;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+    }
+    
+    .inputGroup {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     
     .getStartedButton {
         width: 100%;
+        box-sizing: border-box;
     }
     
     .footerContainer {
@@ -1018,6 +1057,8 @@
     
     .navbar {
         padding: 12px 15px;
+        width: 100%;
+        box-sizing: border-box;
     }
     
     .logo img {
@@ -1025,44 +1066,65 @@
     }
     
     .links {
-        gap: 10px;
+        gap: 8px;
     }
     
     .getStartedBtn, .loginBtn {
-        padding: 8px 16px;
-        font-size: 14px;
+        padding: 8px 14px;
+        font-size: 13px;
     }
     
     .heroSection {
         padding: 20px 15px;
         gap: 30px;
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
     }
     
     .heroSectionText {
         font-size: clamp(1.5rem, 6vw, 2rem);
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .createYourLink {
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
     }
     
     .linkInputWrapper {
-        padding: 0 6px 0 16px;
+        padding: 0 6px 0 12px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     
     .linkPrefix {
-        font-size: 14px;
+        font-size: 12px;
+        margin-right: 2px;
+        flex-shrink: 0;
     }
     
     .linkInput {
-        padding: 14px 6px;
-        font-size: 14px;
+        padding: 12px 4px;
+        font-size: 13px;
+        min-width: 0;
+        flex: 1;
+        width: auto;
     }
     
     .linkButtonArrow {
-        width: 42px;
-        height: 42px;
+        width: 40px;
+        height: 40px;
+        margin-left: 4px;
+        flex-shrink: 0;
     }
     
     .linkButtonArrow svg {
-        width: 17px;
-        height: 17px;
+        width: 16px;
+        height: 16px;
     }
     
     .featureCard {
@@ -1103,24 +1165,35 @@
     
     .getStartedForm {
         max-width: 100%;
+        width: 100%;
+        padding: 0;
+        box-sizing: border-box;
     }
     
     .inputGroup {
-        padding: 0 20px;
+        padding: 0 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     
     .inputPrefix {
-        font-size: 14px;
+        font-size: 13px;
+        flex-shrink: 0;
     }
     
     .getStartedInput {
         padding: 16px 0;
         font-size: 14px;
+        min-width: 0;
+        flex: 1;
     }
     
     .getStartedButton {
         padding: 16px 32px;
         font-size: 15px;
+        width: 100%;
+        box-sizing: border-box;
     }
     
     .getStartedFeatures {

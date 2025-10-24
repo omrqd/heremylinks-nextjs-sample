@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './login.module.css';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [step, setStep] = useState<'email' | 'password'>('email');
   const [emailUsername, setEmailUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -39,19 +41,22 @@ export default function LoginPage() {
     }
     
     console.log('Sign up with:', emailUsername, password);
-    alert('Account created successfully! (This is a demo)');
+    // Redirect to dashboard after successful login
+    router.push('/dashboard');
   };
 
   const handleGoogleLogin = (e: React.MouseEvent) => {
     e.preventDefault();
     console.log('Google login clicked');
-    alert('Google login will be implemented here!');
+    // Redirect to dashboard after successful Google login
+    router.push('/dashboard');
   };
 
   const handleAppleLogin = (e: React.MouseEvent) => {
     e.preventDefault();
     console.log('Apple login clicked');
-    alert('Apple login will be implemented here!');
+    // Redirect to dashboard after successful Apple login
+    router.push('/dashboard');
   };
 
   return (
