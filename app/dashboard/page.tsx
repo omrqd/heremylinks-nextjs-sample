@@ -24,6 +24,7 @@ import styles from './dashboard.module.css';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useToast } from '@/components/ToastProvider';
+import Sidebar from './components/Sidebar';
 
 interface BioLink {
   id: string;
@@ -120,6 +121,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { showToast } = useToast();
   
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profileImage, setProfileImage] = useState('');
   const [displayName, setDisplayName] = useState('Your Name');
   const [username, setUsername] = useState('yourname');
@@ -787,10 +789,23 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.dashboardContainer}>
+      {/* Sidebar */}
+      <Sidebar 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        profileImage={profileImage}
+        displayName={displayName}
+        username={username}
+        isPublished={isPublished}
+      />
+      
       {/* Top Navigation */}
       <nav className={styles.topNav}>
         <div className={styles.navLeft}>
-          <button className={styles.menuBtn}>
+          <button 
+            className={styles.menuBtn} 
+            onClick={() => setIsSidebarOpen(true)}
+          >
             <i className="fas fa-bars"></i>
           </button>
           <Link href="/" className={styles.logoLink}>
