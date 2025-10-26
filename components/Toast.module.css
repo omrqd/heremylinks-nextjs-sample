@@ -1,0 +1,112 @@
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  min-width: 320px;
+  max-width: 480px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  z-index: 1000;
+  
+  /* Animation properties */
+  transform: translateX(-100%) translateY(20px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast.visible {
+  transform: translateX(0) translateY(0);
+  opacity: 1;
+}
+
+.toast.leaving {
+  transform: translateX(-100%) translateY(20px);
+  opacity: 0;
+}
+
+.toast.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.toast.error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.toast.info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.message {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.closeButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* Hover effect for the entire toast */
+.toast:hover {
+  transform: translateX(0) translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+  .toast {
+    left: 16px;
+    right: 16px;
+    min-width: auto;
+    max-width: none;
+    bottom: 16px;
+  }
+  
+  .toast.visible {
+    transform: translateX(0) translateY(0);
+  }
+  
+  .toast.leaving {
+    transform: translateX(0) translateY(100px);
+  }
+  
+  .toast:hover {
+    transform: translateX(0) translateY(-2px);
+  }
+}

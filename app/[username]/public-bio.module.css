@@ -419,41 +419,47 @@
 }
 
 .bioCard.template1 .profileName {
-    color: #000000;
+    color: #000000 !important;
     font-weight: 700;
 }
 
 .bioCard.template1 .profileBio {
-    color: #4b5563;
+    color: #4b5563 !important;
 }
 
 .bioCard.template1 .socialIcon {
-    background: #000000;
-    box-shadow: none;
+    background: #000000 !important;
+    box-shadow: none !important;
 }
 
 .bioCard.template1 .socialIcon:hover {
-    background: #1a1a1a;
+    background: #1a1a1a !important;
+    transform: translateY(-2px) scale(1.08);
 }
 
 .bioCard.template1 .bioLink {
-    background: #ffffff;
-    border: 3px solid #000000;
-    border-radius: 50px;
+    background: #ffffff !important;
+    border: 3px solid #000000 !important;
+    border-radius: 50px !important;
 }
 
 .bioCard.template1 .bioLink:hover {
-    background: #f9fafb;
-    transform: translateY(-2px);
+    background: #f9fafb !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
 }
 
 .bioCard.template1 .linkTitle {
-    color: #000000;
+    color: #000000 !important;
     font-weight: 600;
 }
 
 .bioCard.template1 .linkIcon {
-    background: #000000;
+    color: #000000 !important;
+}
+
+.bioCard.template1 .fa-arrow-right {
+    color: #000000 !important;
 }
 
 .bioCard.template1 .linkImageLeft,

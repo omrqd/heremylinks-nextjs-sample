@@ -6,10 +6,12 @@ import { signIn, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './login.module.css';
+import { useToast } from '@/components/ToastProvider';
 
 export default function LoginPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { showToast } = useToast();
   const [step, setStep] = useState<'email' | 'password'>('email');
   const [emailUsername, setEmailUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -55,7 +57,7 @@ export default function LoginPage() {
       setStep('password');
     } catch (error) {
       console.error('Error checking email:', error);
-      alert('Failed to verify email. Please try again.');
+      showToast('Failed to verify email. Please try again.', 'error');
     } finally {
       setIsCheckingEmail(false);
     }
@@ -74,13 +76,13 @@ export default function LoginPage() {
     
     // Validate password match for new users
     if (isNewUser && password !== repeatPassword) {
-      alert('Passwords do not match!');
+      showToast('Passwords do not match!', 'error');
       return;
     }
     
     // Validate password length
     if (password.length < 6) {
-      alert('Password must be at least 6 characters long!');
+      showToast('Password must be at least 6 characters long!', 'error');
       return;
     }
     
@@ -104,7 +106,7 @@ export default function LoginPage() {
         const data = await response.json();
         
         if (!response.ok) {
-          alert(data.error || 'Registration failed');
+          showToast(data.error || 'Registration failed', 'error');
           setIsLoading(false);
           return;
         }
@@ -119,9 +121,9 @@ export default function LoginPage() {
       
       if (result?.error) {
         if (isNewUser) {
-          alert('Registration successful but login failed. Please try logging in.');
+          showToast('Registration successful but login failed. Please try logging in.', 'error');
         } else {
-          alert('Invalid password. Please try again.');
+          showToast('Invalid password. Please try again.', 'error');
         }
         setIsLoading(false);
         return;
@@ -132,7 +134,7 @@ export default function LoginPage() {
       router.refresh();
     } catch (error) {
       console.error('Authentication error:', error);
-      alert('Authentication failed. Please try again.');
+      showToast('Authentication failed. Please try again.', 'error');
       setIsLoading(false);
     }
   };
@@ -144,7 +146,7 @@ export default function LoginPage() {
       await signIn('google', { callbackUrl: '/dashboard' });
     } catch (error) {
       console.error('Google login error:', error);
-      alert('Google login failed');
+      showToast('Google login failed', 'error');
       setIsLoading(false);
     }
   };
@@ -156,7 +158,7 @@ export default function LoginPage() {
       await signIn('apple', { callbackUrl: '/dashboard' });
     } catch (error) {
       console.error('Apple login error:', error);
-      alert('Apple login failed');
+      showToast('Apple login failed', 'error');
       setIsLoading(false);
     }
   };

@@ -23,6 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import styles from './dashboard.module.css';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useToast } from '@/components/ToastProvider';
 
 interface BioLink {
   id: string;
@@ -117,6 +118,7 @@ function SortableLinkItem({ link, onDelete }: { link: BioLink; onDelete: (id: st
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { showToast } = useToast();
   
   const [profileImage, setProfileImage] = useState('');
   const [displayName, setDisplayName] = useState('Your Name');
@@ -271,10 +273,13 @@ export default function DashboardPage() {
 
       if (response.ok) {
         setBioLinks(bioLinks.filter(link => link.id !== id));
+        showToast('Link deleted successfully', 'success');
+      } else {
+        showToast('Failed to delete link', 'error');
       }
     } catch (error) {
       console.error('Error deleting link:', error);
-      alert('Failed to delete link');
+      showToast('Failed to delete link', 'error');
     }
   };
 
@@ -356,11 +361,13 @@ export default function DashboardPage() {
       if (response.ok) {
         setIsPublished(true);
         setShowPublishModal(false);
-        alert('Your page has been published! 🎉\nVisit heremylinks.com/' + (publishUsername || username).toLowerCase());
+        showToast(`Your page has been published! 🎉 Visit heremylinks.com/${(publishUsername || username).toLowerCase()}`, 'success');
+      } else {
+        showToast('Failed to publish page', 'error');
       }
     } catch (error) {
       console.error('Error publishing:', error);
-      alert('Failed to publish page');
+      showToast('Failed to publish page', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -368,7 +375,7 @@ export default function DashboardPage() {
 
   const handleTikTokAutofill = async () => {
     if (!tiktokUsername.trim()) {
-      alert('Please enter a TikTok username');
+      showToast('Please enter a TikTok username', 'error');
       return;
     }
 
@@ -406,13 +413,13 @@ export default function DashboardPage() {
 
         setShowTikTokModal(false);
         setTiktokUsername('');
-        alert('Profile autofilled from TikTok! 🎉');
+        showToast('Profile autofilled from TikTok! 🎉', 'success');
       } else {
-        alert('Failed to fetch TikTok profile. Please check the username and try again.');
+        showToast('Failed to fetch TikTok profile. Please check the username and try again.', 'error');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to fetch TikTok profile. Please try again.');
+      showToast('Failed to fetch TikTok profile. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -489,13 +496,13 @@ export default function DashboardPage() {
     if (file) {
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+        showToast('Image size should be less than 5MB', 'error');
         return;
       }
 
       // Check file type
       if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file');
+        showToast('Please upload an image file', 'error');
         return;
       }
 
@@ -545,12 +552,12 @@ export default function DashboardPage() {
 
   const handleLinkImageUpload = (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
+      showToast('Image size should be less than 5MB', 'error');
       return;
     }
 
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
+      showToast('Please upload an image file', 'error');
       return;
     }
 
@@ -590,7 +597,7 @@ export default function DashboardPage() {
 
   const handleAddLink = async () => {
     if (!linkTitle.trim() || !linkUrl.trim()) {
-      alert('Please fill in both title and URL');
+      showToast('Please fill in both title and URL', 'error');
       return;
     }
 
@@ -613,13 +620,13 @@ export default function DashboardPage() {
         const { link } = await response.json();
         setBioLinks([...bioLinks, link]);
         closeAddLinkModal();
-        alert('Link added successfully! 🎉');
+        showToast('Link added successfully! 🎉', 'success');
       } else {
-        alert('Failed to add link');
+        showToast('Failed to add link', 'error');
       }
     } catch (error) {
       console.error('Error adding link:', error);
-      alert('Failed to add link');
+      showToast('Failed to add link', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -677,7 +684,7 @@ export default function DashboardPage() {
 
   const handleAddSocial = async () => {
     if (!selectedPlatform || !socialUrl.trim()) {
-      alert('Please enter a valid URL');
+      showToast('Please enter a valid URL', 'error');
       return;
     }
 
@@ -697,13 +704,13 @@ export default function DashboardPage() {
         const { social } = await response.json();
         setSocialLinks([...socialLinks, social]);
         closeSocialsModal();
-        alert('Social link added successfully! 🎉');
+        showToast('Social link added successfully! 🎉', 'success');
       } else {
-        alert('Failed to add social link');
+        showToast('Failed to add social link', 'error');
       }
     } catch (error) {
       console.error('Error adding social link:', error);
-      alert('Failed to add social link');
+      showToast('Failed to add social link', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -719,12 +726,13 @@ export default function DashboardPage() {
 
       if (response.ok) {
         setSocialLinks(socialLinks.filter(social => social.id !== id));
+        showToast('Social link deleted successfully', 'success');
       } else {
-        alert('Failed to delete social link');
+        showToast('Failed to delete social link', 'error');
       }
     } catch (error) {
       console.error('Error deleting social link:', error);
-      alert('Failed to delete social link');
+      showToast('Failed to delete social link', 'error');
     }
   };
 
@@ -765,13 +773,13 @@ export default function DashboardPage() {
       if (response.ok) {
         setSelectedTemplate(templateId);
         closeTemplatesModal();
-        alert('Template applied successfully! 🎨');
+        showToast('Template applied successfully! 🎨', 'success');
       } else {
-        alert('Failed to apply template');
+        showToast('Failed to apply template', 'error');
       }
     } catch (error) {
       console.error('Error applying template:', error);
-      alert('Failed to apply template');
+      showToast('Failed to apply template', 'error');
     } finally {
       setIsSaving(false);
     }
