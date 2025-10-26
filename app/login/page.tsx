@@ -1,63 +1,182 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './login.module.css';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [step, setStep] = useState<'email' | 'password'>('email');
   const [emailUsername, setEmailUsername] = useState('');
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const [subtitle, setSubtitle] = useState('Log in to your HereMyLinks');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
-  const handleContinue = (e: React.FormEvent) => {
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/dashboard');
+    }
+  }, [status, router]);
+
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (emailUsername.trim()) {
-      setSubtitle('Create your password');
+    if (!emailUsername.trim()) return;
+
+    setIsCheckingEmail(true);
+
+    try {
+      // Check if email exists
+      const response = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailUsername }),
+      });
+
+      const data = await response.json();
+
+      if (data.exists) {
+        // Existing user - show login
+        setIsNewUser(false);
+        setSubtitle('Welcome back! Enter your password');
+      } else {
+        // New user - show registration
+        setIsNewUser(true);
+        setSubtitle('Create your password');
+      }
+
       setStep('password');
+    } catch (error) {
+      console.error('Error checking email:', error);
+      alert('Failed to verify email. Please try again.');
+    } finally {
+      setIsCheckingEmail(false);
     }
   };
 
   const handleEditEmail = () => {
     setSubtitle('Log in to your HereMyLinks');
     setStep('email');
+    setPassword('');
+    setRepeatPassword('');
+    setIsNewUser(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password !== repeatPassword) {
+    // Validate password match for new users
+    if (isNewUser && password !== repeatPassword) {
       alert('Passwords do not match!');
       return;
     }
     
+    // Validate password length
     if (password.length < 6) {
       alert('Password must be at least 6 characters long!');
       return;
     }
     
-    console.log('Sign up with:', emailUsername, password);
-    // Redirect to dashboard after successful login
-    router.push('/dashboard');
+    setIsLoading(true);
+    
+    try {
+      if (isNewUser) {
+        // Register new user
+        const username = emailUsername.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailUsername,
+            password,
+            username,
+            name: username,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          alert(data.error || 'Registration failed');
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Sign in with credentials
+      const result = await signIn('credentials', {
+        email: emailUsername,
+        password,
+        redirect: false,
+      });
+      
+      if (result?.error) {
+        if (isNewUser) {
+          alert('Registration successful but login failed. Please try logging in.');
+        } else {
+          alert('Invalid password. Please try again.');
+        }
+        setIsLoading(false);
+        return;
+      }
+      
+      // Success - redirect to dashboard
+      router.push('/dashboard');
+      router.refresh();
+    } catch (error) {
+      console.error('Authentication error:', error);
+      alert('Authentication failed. Please try again.');
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleLogin = (e: React.MouseEvent) => {
+  const handleGoogleLogin = async (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('Google login clicked');
-    // Redirect to dashboard after successful Google login
-    router.push('/dashboard');
+    setIsLoading(true);
+    try {
+      await signIn('google', { callbackUrl: '/dashboard' });
+    } catch (error) {
+      console.error('Google login error:', error);
+      alert('Google login failed');
+      setIsLoading(false);
+    }
   };
 
-  const handleAppleLogin = (e: React.MouseEvent) => {
+  const handleAppleLogin = async (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('Apple login clicked');
-    // Redirect to dashboard after successful Apple login
-    router.push('/dashboard');
+    setIsLoading(true);
+    try {
+      await signIn('apple', { callbackUrl: '/dashboard' });
+    } catch (error) {
+      console.error('Apple login error:', error);
+      alert('Apple login failed');
+      setIsLoading(false);
+    }
   };
+
+  // Show loading state while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className={styles.loginContainer}>
+        <div className={styles.loadingScreen}>
+          <div className={styles.loadingSpinner}></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render login form if authenticated (will redirect)
+  if (status === 'authenticated') {
+    return null;
+  }
 
   return (
     <div className={styles.loginContainer}>
@@ -78,17 +197,18 @@ export default function LoginPage() {
                 <div className={styles.formStep}>
                   <div className={styles.formGroup}>
                     <input 
-                      type="text" 
+                      type="email" 
                       className={styles.formInput} 
                       placeholder="Email" 
                       value={emailUsername}
                       onChange={(e) => setEmailUsername(e.target.value)}
                       required
+                      disabled={isCheckingEmail}
                     />
                   </div>
                   
-                  <button type="submit" className={styles.btnPrimary}>
-                    Continue
+                  <button type="submit" className={styles.btnPrimary} disabled={isCheckingEmail}>
+                    {isCheckingEmail ? 'Checking...' : 'Continue'}
                   </button>
                 </div>
               )}
@@ -114,22 +234,27 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   
-                  <div className={styles.formGroup}>
-                    <input 
-                      type="password" 
-                      className={styles.formInput} 
-                      placeholder="Repeat Password" 
-                      value={repeatPassword}
-                      onChange={(e) => setRepeatPassword(e.target.value)}
-                      required
-                    />
-                  </div>
+                  {/* Only show repeat password for new users */}
+                  {isNewUser && (
+                    <div className={styles.formGroup}>
+                      <input 
+                        type="password" 
+                        className={styles.formInput} 
+                        placeholder="Repeat Password" 
+                        value={repeatPassword}
+                        onChange={(e) => setRepeatPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  )}
                   
-                  <button type="submit" className={styles.btnPrimary}>
-                    Sign Up
+                  <button type="submit" className={styles.btnPrimary} disabled={isLoading}>
+                    {isLoading ? 'Please wait...' : (isNewUser ? 'Sign Up' : 'Log In')}
                   </button>
                 </div>
               )}
@@ -161,14 +286,7 @@ export default function LoginPage() {
             <div className={styles.loginFooter}>
               <div className={styles.forgotLinks}>
                 <a href="#" className={styles.linkPurple}>Forgot password?</a>
-                <span className={styles.separator}>•</span>
-                <a href="#" className={styles.linkPurple}>Forgot username?</a>
               </div>
-              
-              <p className={styles.signupText}>
-                Don&apos;t have an account? 
-                <a href="#" className={styles.linkPurple}> Sign up</a>
-              </p>
             </div>
           </div>
         </div>

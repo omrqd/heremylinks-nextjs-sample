@@ -128,7 +128,7 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 0;
 }
 
 .profileImage {
@@ -225,7 +225,7 @@
 .profileBio {
     font-size: 14px;
     color: #6b7280;
-    margin: 0 0 30px 0;
+    margin: 0;
     cursor: pointer;
     padding: 8px 16px;
     border-radius: 8px;
@@ -296,6 +296,71 @@
     outline: none;
     border-color: #764ba2;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Social Icons */
+.socialIconsContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    flex-wrap: wrap;
+    margin: 8px 0 20px 0;
+}
+
+.socialIconWrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.socialIcon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+}
+
+.socialIcon:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.deleteSocialBtn {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    background: #ef4444;
+    border: 2px solid white;
+    border-radius: 50%;
+    color: white;
+    font-size: 9px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    opacity: 0;
+    z-index: 10;
+}
+
+.socialIconWrapper:hover .deleteSocialBtn {
+    opacity: 1;
+}
+
+.deleteSocialBtn:hover {
+    background: #dc2626;
+    transform: scale(1.15);
 }
 
 /* Bio Links */
@@ -374,6 +439,14 @@
     color: #1a1a1a;
 }
 
+/* Link Actions Container */
+.linkActions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
 .deleteLinkBtn {
     background: transparent;
     border: none;
@@ -383,11 +456,40 @@
     padding: 4px 8px;
     border-radius: 4px;
     transition: all 0.2s;
+    flex-shrink: 0;
 }
 
 .deleteLinkBtn:hover {
     color: #ef4444;
     background: #fee2e2;
+}
+
+/* Drag Handle */
+.dragHandle {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 16px;
+    cursor: grab;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.dragHandle:hover {
+    color: #667eea;
+    background: #e0e9ff;
+}
+
+.dragHandle:active {
+    cursor: grabbing;
+}
+
+/* Dragging State */
+.bioLinkItem.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
 }
 
 /* Preview Link Layouts */
@@ -432,7 +534,7 @@
     order: 0;
 }
 
-.bioLinkItem.previewImageLeft .deleteLinkBtn {
+.bioLinkItem.previewImageLeft .linkActions {
     order: 1;
 }
 
@@ -449,7 +551,7 @@
     order: 0;
 }
 
-.bioLinkItem.previewImageRight .deleteLinkBtn {
+.bioLinkItem.previewImageRight .linkActions {
     order: 1;
 }
 
@@ -458,25 +560,28 @@
 .bioLinkItem.previewImageTopRight {
     flex-direction: column;
     align-items: stretch;
+    position: relative;
 }
 
 .bioLinkItem.previewImageTopLeft .linkContent,
 .bioLinkItem.previewImageTopRight .linkContent {
-    justify-content: space-between;
-    width: 100%;
+    flex: 1;
+    width: auto;
 }
 
-.bioLinkItem.previewImageTopLeft .deleteLinkBtn,
-.bioLinkItem.previewImageTopRight .deleteLinkBtn {
+.bioLinkItem.previewImageTopLeft .linkActions,
+.bioLinkItem.previewImageTopRight .linkActions {
     position: absolute;
     top: 12px;
     right: 12px;
+    z-index: 10;
 }
 
 /* Large Image Layout */
 .bioLinkItem.previewImageLarge {
     flex-direction: column;
     align-items: stretch;
+    position: relative;
 }
 
 .bioLinkItem.previewImageLarge .previewLinkImageTop {
@@ -484,14 +589,15 @@
 }
 
 .bioLinkItem.previewImageLarge .linkContent {
-    justify-content: space-between;
-    width: 100%;
+    flex: 1;
+    width: auto;
 }
 
-.bioLinkItem.previewImageLarge .deleteLinkBtn {
+.bioLinkItem.previewImageLarge .linkActions {
     position: absolute;
     top: 12px;
     right: 12px;
+    z-index: 10;
 }
 
 /* Action Buttons */
@@ -653,6 +759,32 @@
     background: linear-gradient(135deg, #5568d3 0%, #6a3d91 100%);
 }
 
+.publishBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Logout Button */
+.logoutBtn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fee2e2;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+    background: #fecaca;
+    transform: translateY(-2px);
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     .mainContent {
@@ -677,6 +809,24 @@
 
     .navRight {
         gap: 8px;
+    }
+
+    .socialIconsContainer {
+        gap: 10px;
+        padding: 10px 0;
+        margin: 8px 0 18px 0;
+    }
+
+    .socialIcon {
+        width: 42px;
+        height: 42px;
+        font-size: 17px;
+    }
+
+    .deleteSocialBtn {
+        width: 17px;
+        height: 17px;
+        font-size: 8px;
     }
 
     .previewBtn,
@@ -775,6 +925,27 @@
 
     .addTitle {
         font-size: 28px;
+    }
+
+    .linkActions {
+        gap: 2px;
+    }
+
+    .dragHandle,
+    .deleteLinkBtn {
+        font-size: 14px;
+        padding: 4px 6px;
+    }
+
+    .bioLinkItem {
+        padding: 12px 14px;
+    }
+
+    .bioLinkItem.previewImageTopLeft .linkActions,
+    .bioLinkItem.previewImageTopRight .linkActions,
+    .bioLinkItem.previewImageLarge .linkActions {
+        top: 8px;
+        right: 8px;
     }
 }
 
@@ -953,6 +1124,85 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Publish Modal Specific Styles */
+.urlPrefix {
+    position: absolute;
+    left: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.usernameInput {
+    flex: 1;
+    padding: 14px 16px 14px 170px;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    font-family: 'Poppins', sans-serif;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.usernameInput:focus {
+    outline: none;
+}
+
+.usernameInput::placeholder {
+    color: #9ca3af;
+}
+
+.errorMessage {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #dc2626;
+    margin-top: -8px;
+}
+
+.errorMessage i {
+    font-size: 16px;
+}
+
+.helperText {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.6;
+    margin-top: 12px;
+}
+
+.publishUrlDisplay {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #e0e9ff 0%, #e7e3ff 100%);
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    margin: 16px 0;
+}
+
+.publishUrlDisplay i {
+    font-size: 20px;
+    color: #667eea;
+}
+
+.publishUrl {
+    font-size: 16px;
+    font-weight: 600;
+    color: #667eea;
+    word-break: break-all;
 }
 
 /* Add Link Modal */
@@ -1358,10 +1608,348 @@
     cursor: not-allowed;
 }
 
+/* Social Platforms Grid */
+.socialPlatformsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.socialPlatformBtn {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Poppins', sans-serif;
+}
+
+.socialPlatformBtn:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.socialPlatformBtn i {
+    font-size: 32px;
+    color: #667eea;
+}
+
+.socialPlatformBtn span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-align: center;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .addLinkModal {
         max-width: 100%;
         border-radius: 24px 24px 0 0;
+    }
+
+    .socialPlatformsGrid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .socialPlatformBtn {
+        padding: 20px 12px;
+    }
+
+    .socialPlatformBtn i {
+        font-size: 28px;
+    }
+
+    .socialPlatformBtn span {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .socialPlatformsGrid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .socialPlatformBtn {
+        padding: 16px 8px;
+    }
+
+    .socialPlatformBtn i {
+        font-size: 24px;
+    }
+
+    .socialPlatformBtn span {
+        font-size: 11px;
+    }
+
+    .socialIconsContainer {
+        gap: 10px;
+        padding: 8px 0;
+        margin: 6px 0 16px 0;
+    }
+
+    .socialIcon {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+    }
+
+    .deleteSocialBtn {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+    }
+}
+
+/* ==================== TEMPLATE 1 STYLES ==================== */
+.phoneMockup.template1 {
+    background: #ffffff;
+}
+
+.phoneMockup.template1 .profileName {
+    color: #000000;
+    font-weight: 700;
+}
+
+.phoneMockup.template1 .profileBio {
+    color: #4b5563;
+}
+
+.phoneMockup.template1 .socialIcon {
+    background: #000000;
+    box-shadow: none;
+}
+
+.phoneMockup.template1 .socialIcon:hover {
+    background: #1a1a1a;
+}
+
+.phoneMockup.template1 .bioLinkItem {
+    background: #ffffff;
+    border: 3px solid #000000;
+    border-radius: 50px;
+    padding: 18px 24px;
+}
+
+.phoneMockup.template1 .bioLinkItem:hover {
+    background: #f9fafb;
+    transform: translateY(-2px);
+}
+
+.phoneMockup.template1 .linkTitle {
+    color: #000000;
+    font-weight: 600;
+}
+
+.phoneMockup.template1 .linkIcon {
+    background: #000000;
+}
+
+.phoneMockup.template1 .previewLinkImage {
+    border-radius: 50%;
+}
+
+.phoneMockup.template1 .previewLinkImageTop {
+    border-radius: 16px;
+}
+
+/* Templates Modal */
+.templatesModal {
+    background: white;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.templatesBody {
+    padding: 24px 28px 32px;
+}
+
+.templatesGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 24px;
+}
+
+.templateCard {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: left;
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.templateCard:hover {
+    border-color: #667eea;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15);
+}
+
+.templateCard:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.templateCardActive {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #f0f4ff 0%, #f5f0ff 100%);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+}
+
+.templatePreview {
+    width: 100%;
+    height: 200px;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+}
+
+.templatePreviewDefault,
+.templatePreviewBold {
+    width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px;
+}
+
+.previewCircle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.templatePreviewBold .previewCircle {
+    background: #000000;
+}
+
+.previewLine {
+    width: 60px;
+    height: 4px;
+    border-radius: 2px;
+    background: #9ca3af;
+}
+
+.previewButton {
+    width: 100%;
+    height: 36px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: 2px solid transparent;
+}
+
+.previewButtonBold {
+    width: 100%;
+    height: 36px;
+    border-radius: 50px;
+    background: #ffffff;
+    border: 3px solid #000000;
+}
+
+.templateInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.templateName {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.templateDescription {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .templatesModal {
+        max-width: 100%;
+        border-radius: 24px 24px 0 0;
+        max-height: 90vh;
+    }
+
+    .templatesGrid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .templatePreview {
+        height: 180px;
+    }
+}
+
+@media (max-width: 480px) {
+    .templatesBody {
+        padding: 20px;
+    }
+
+    .templateCard {
+        padding: 16px;
+    }
+
+    .templatePreview {
+        height: 160px;
+    }
+
+    .templatePreviewDefault,
+    .templatePreviewBold {
+        width: 120px;
+        padding: 16px;
+        gap: 6px;
+    }
+
+    .previewCircle {
+        width: 32px;
+        height: 32px;
+    }
+
+    .previewLine {
+        width: 50px;
+        height: 3px;
+    }
+
+    .previewButton,
+    .previewButtonBold {
+        height: 28px;
+    }
+
+    .templateName {
+        font-size: 15px;
+    }
+
+    .templateDescription {
+        font-size: 12px;
     }
 }

@@ -1,0 +1,466 @@
+/* Public Bio Page Styles */
+
+.publicBioContainer {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.bioCard {
+    width: 100%;
+    max-width: 680px;
+    background: white;
+    border-radius: 24px;
+    padding: 48px 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+}
+
+/* Profile Section */
+.profileSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.profileImageWrapper {
+    margin-bottom: 20px;
+}
+
+.profileImage {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.profilePlaceholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: 700;
+    color: white;
+    border: 4px solid #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.profileName {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 12px 0;
+}
+
+.profileBio {
+    font-size: 16px;
+    color: #6b7280;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 500px;
+}
+
+/* Social Icons */
+.socialIconsContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    margin: 12px 0 28px 0;
+    flex-wrap: wrap;
+}
+
+.socialIcon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+    position: relative;
+}
+
+.socialIcon:hover {
+    transform: translateY(-2px) scale(1.08);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.45);
+}
+
+.socialIcon::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    padding: 2px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.socialIcon:hover::before {
+    opacity: 1;
+}
+
+/* Links Section */
+.linksSection {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.bioLink {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 24px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: 16px;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.bioLink:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.linkContent {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.linkIcon {
+    font-size: 20px;
+}
+
+.linkTitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.bioLink .fa-arrow-right {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+/* Link Layout Variations */
+.layoutSimple {
+    /* Default layout */
+}
+
+.layoutImageLeft .linkImageLeft,
+.layoutImageRight .linkImageRight {
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.layoutImageLeft .linkImageLeft img,
+.layoutImageRight .linkImageRight img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.layoutImageLeft {
+    flex-wrap: wrap;
+}
+
+.layoutImageLeft .linkImageLeft {
+    order: -1;
+}
+
+.layoutImageRight {
+    flex-wrap: wrap;
+}
+
+.layoutImageRight .linkImageRight {
+    order: 0;
+}
+
+.layoutImageTopLeft,
+.layoutImageTopRight,
+.layoutImageLarge {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.linkImageTop {
+    width: 100%;
+    height: 120px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.layoutImageLarge .linkImageTop {
+    height: 180px;
+}
+
+.linkImageTop img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* No Links State */
+.noLinks {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+}
+
+.noLinks i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.noLinks p {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Footer */
+.footer {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+}
+
+.footerLink {
+    display: inline-block;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.footerLink:hover {
+    opacity: 1;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .bioCard {
+        padding: 36px 28px;
+        border-radius: 20px;
+    }
+
+    .profileImage,
+    .profilePlaceholder {
+        width: 100px;
+        height: 100px;
+    }
+
+    .profilePlaceholder {
+        font-size: 40px;
+    }
+
+    .profileName {
+        font-size: 24px;
+    }
+
+    .profileBio {
+        font-size: 15px;
+    }
+
+    .socialIconsContainer {
+        gap: 10px;
+        padding: 10px 0;
+        margin: 10px 0 24px 0;
+    }
+
+    .socialIcon {
+        width: 40px;
+        height: 40px;
+        font-size: 17px;
+    }
+
+    .bioLink {
+        padding: 16px 20px;
+        gap: 12px;
+    }
+
+    .linkTitle {
+        font-size: 15px;
+    }
+
+    .layoutImageLeft .linkImageLeft,
+    .layoutImageRight .linkImageRight {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+    }
+
+    .linkImageTop {
+        height: 100px;
+    }
+
+    .layoutImageLarge .linkImageTop {
+        height: 140px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .publicBioContainer {
+        padding: 12px;
+    }
+
+    .bioCard {
+        padding: 28px 20px;
+        border-radius: 16px;
+    }
+
+    .profileImage,
+    .profilePlaceholder {
+        width: 90px;
+        height: 90px;
+    }
+
+    .profilePlaceholder {
+        font-size: 36px;
+    }
+
+    .profileName {
+        font-size: 22px;
+    }
+
+    .profileBio {
+        font-size: 14px;
+    }
+
+    .socialIconsContainer {
+        gap: 8px;
+        padding: 8px 0;
+        margin: 8px 0 20px 0;
+    }
+
+    .socialIcon {
+        width: 36px;
+        height: 36px;
+        font-size: 15px;
+    }
+
+    .bioLink {
+        padding: 14px 16px;
+        gap: 10px;
+        border-radius: 12px;
+    }
+
+    .linkIcon {
+        font-size: 18px;
+    }
+
+    .linkTitle {
+        font-size: 14px;
+    }
+
+    .bioLink .fa-arrow-right {
+        font-size: 14px;
+    }
+
+    .layoutImageLeft .linkImageLeft,
+    .layoutImageRight .linkImageRight {
+        width: 45px;
+        height: 45px;
+        min-width: 45px;
+    }
+
+    .linkImageTop {
+        height: 80px;
+    }
+
+    .layoutImageLarge .linkImageTop {
+        height: 120px;
+    }
+
+    .footer {
+        margin-top: 36px;
+        padding-top: 24px;
+    }
+}
+
+
+/* ==================== TEMPLATE 1 STYLES ==================== */
+.bioCard.template1 {
+    background: #ffffff;
+}
+
+.bioCard.template1 .profileName {
+    color: #000000;
+    font-weight: 700;
+}
+
+.bioCard.template1 .profileBio {
+    color: #4b5563;
+}
+
+.bioCard.template1 .socialIcon {
+    background: #000000;
+    box-shadow: none;
+}
+
+.bioCard.template1 .socialIcon:hover {
+    background: #1a1a1a;
+}
+
+.bioCard.template1 .bioLink {
+    background: #ffffff;
+    border: 3px solid #000000;
+    border-radius: 50px;
+}
+
+.bioCard.template1 .bioLink:hover {
+    background: #f9fafb;
+    transform: translateY(-2px);
+}
+
+.bioCard.template1 .linkTitle {
+    color: #000000;
+    font-weight: 600;
+}
+
+.bioCard.template1 .linkIcon {
+    background: #000000;
+}
+
+.bioCard.template1 .linkImageLeft,
+.bioCard.template1 .linkImageRight {
+    border-radius: 50%;
+}
+
+.bioCard.template1 .linkImageTop {
+    border-radius: 16px;
+}

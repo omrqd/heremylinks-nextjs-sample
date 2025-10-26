@@ -1,11 +1,22 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSession, signOut } from 'next-auth/react';
 import styles from './home.module.css';
 import TopBanner from '@/components/TopBanner';
 import FeaturesSlider from '@/components/FeaturesSlider';
 import ScrollAnimation from '@/components/ScrollAnimation';
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: '/' });
+  };
+
   return (
     <>
       <ScrollAnimation />
@@ -16,8 +27,71 @@ export default function Home() {
             <Image src="/imgs/logo.png" alt="HereMyLinks" width={240} height={60} priority />
           </div>
           <div className={styles.links}>
-            <Link href="/login" className={styles.getStartedBtn}>Get Started</Link>
-            <Link href="/login" className={styles.loginBtn}>Login</Link>
+            {status === 'loading' ? (
+              <div className={styles.loadingPlaceholder}></div>
+            ) : session ? (
+              <div className={styles.userMenuWrapper}>
+                <button
+                  className={styles.userMenuButton}
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  onBlur={() => setTimeout(() => setShowUserMenu(false), 200)}
+                >
+                  {session.user.image || (session.user as any).profileImage ? (
+                    <Image
+                      src={session.user.image || (session.user as any).profileImage}
+                      alt={session.user.name || 'User'}
+                      width={40}
+                      height={40}
+                      className={styles.userAvatar}
+                    />
+                  ) : (
+                    <div className={styles.userAvatarPlaceholder}>
+                      {session.user.name?.charAt(0).toUpperCase() || session.user.email?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className={styles.userName}>{session.user.name || session.user.email}</span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`${styles.chevron} ${showUserMenu ? styles.chevronUp : ''}`}
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                {showUserMenu && (
+                  <div className={styles.userDropdown}>
+                    <Link href="/dashboard" className={styles.dropdownItem}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                      </svg>
+                      Dashboard
+                    </Link>
+                    <button onClick={handleLogout} className={styles.dropdownItem}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link href="/login" className={styles.getStartedBtn}>Get Started</Link>
+                <Link href="/login" className={styles.loginBtn}>Login</Link>
+              </>
+            )}
           </div>
         </div>
       </div>
