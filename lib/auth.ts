@@ -57,6 +57,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!isPasswordValid) {
           return null;
         }
+        
+        // Check if user is verified
+        if (user.is_verified === 0) {
+          throw new Error('Please verify your email before logging in');
+        }
 
         return {
           id: user.id,

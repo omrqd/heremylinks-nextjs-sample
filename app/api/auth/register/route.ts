@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import db from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { generateVerificationCode, getVerificationCodeExpiry } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,33 +43,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate verification code
+    const verificationCode = generateVerificationCode();
+    const verificationCodeExpires = getVerificationCodeExpiry();
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
     const userId = uuidv4();
+    
     await db.query(
-      `INSERT INTO users (id, email, password, username, name, provider) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, email, hashedPassword, username, name || username, 'email']
+      `INSERT INTO users (id, email, password, username, name, verification_code, verification_code_expires, is_verified, provider) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, email, hashedPassword, username, name, verificationCode, verificationCodeExpires, false, 'credentials']
     );
+    
+    // Send verification email
+    try {
+      await fetch(`${request.nextUrl.origin}/api/email/send-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username: name || username }),
+      });
+    } catch (error) {
+      console.error('Failed to send verification email:', error);
+      // Continue with registration even if email fails
+    }
 
-    return NextResponse.json(
-      {
-        success: true,
-        user: {
-          id: userId,
-          email,
-          username,
-          name: name || username,
-        },
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ 
+      success: true, 
+      message: 'User registered successfully',
+      needsVerification: true,
+      user: {
+        id: userId,
+        email,
+        username,
+        name: name || username,
+      }
+    }, { status: 201 });
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { error: 'Failed to create user' },
+      { error: 'Failed to register user' },
       { status: 500 }
     );
   }

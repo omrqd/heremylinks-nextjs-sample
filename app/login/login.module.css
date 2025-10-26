@@ -62,6 +62,103 @@
     overflow: hidden;
 }
 
+.verificationContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+    background: #f9fafb;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.verificationText {
+    font-size: 16px;
+    line-height: 1.6;
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    max-width: 380px;
+}
+
+.inputGroup {
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.input {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-align: center;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: #ffffff;
+    font-family: var(--font-family);
+    transition: all 0.2s ease;
+    color: var(--text-primary);
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.button {
+    width: 100%;
+    padding: 16px 24px;
+    background: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-family);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.button:hover {
+    background: #1a1a1a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+.button:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.resendContainer {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.resendButton {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.resendButton:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1a1a;
+}
+
 .formStep {
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 1;

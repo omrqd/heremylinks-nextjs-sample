@@ -7,19 +7,22 @@ import Link from 'next/link';
 import Image from 'next/image';
 import styles from './login.module.css';
 import { useToast } from '@/components/ToastProvider';
+import VerificationForm from './components/VerificationForm';
 
 export default function LoginPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { showToast } = useToast();
-  const [step, setStep] = useState<'email' | 'password'>('email');
+  const [step, setStep] = useState<'email' | 'password' | 'verification'>('email');
   const [emailUsername, setEmailUsername] = useState('');
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [subtitle, setSubtitle] = useState('Log in to your HereMyLinks');
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   // Redirect authenticated users to dashboard
   useEffect(() => {
@@ -35,8 +38,8 @@ export default function LoginPage() {
     setIsCheckingEmail(true);
 
     try {
-      // Check if email exists
-      const response = await fetch('/api/auth/check-email', {
+      // Check if email exists and verification status
+      const response = await fetch('/api/auth/check-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailUsername }),
@@ -45,16 +48,26 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.exists) {
-        // Existing user - show login
-        setIsNewUser(false);
-        setSubtitle('Welcome back! Enter your password');
+        if (!data.isVerified) {
+          // User exists but is not verified - show verification form
+          setNeedsVerification(true);
+          setStep('verification');
+          setSubtitle('Verify your email address');
+          showToast('Please verify your email before logging in', 'info');
+          // Send a new verification code
+          handleResendCode();
+        } else {
+          // Existing verified user - show login
+          setIsNewUser(false);
+          setSubtitle('Welcome back! Enter your password');
+          setStep('password');
+        }
       } else {
         // New user - show registration
         setIsNewUser(true);
         setSubtitle('Create your password');
+        setStep('password');
       }
-
-      setStep('password');
     } catch (error) {
       console.error('Error checking email:', error);
       showToast('Failed to verify email. Please try again.', 'error');
@@ -69,6 +82,82 @@ export default function LoginPage() {
     setPassword('');
     setRepeatPassword('');
     setIsNewUser(false);
+    setNeedsVerification(false);
+  };
+  
+  const handleVerifyEmail = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      showToast('Please enter a valid verification code', 'error');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('/api/email/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailUsername,
+          code: verificationCode
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        showToast(data.error || 'Failed to verify email', 'error');
+        setIsLoading(false);
+        return;
+      }
+      
+      showToast('Email verified successfully!', 'success');
+      
+      // Sign in with credentials after verification
+      const result = await signIn('credentials', {
+        email: emailUsername,
+        password,
+        redirect: false,
+      });
+      
+      if (result?.error) {
+        showToast('Verification successful but login failed. Please try logging in.', 'error');
+        setStep('password');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Redirect to dashboard on successful login
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error verifying email:', error);
+      showToast('Failed to verify email. Please try again.', 'error');
+      setIsLoading(false);
+    }
+  };
+  
+  const handleResendCode = async () => {
+    try {
+      const response = await fetch('/api/email/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailUsername,
+          username: emailUsername.split('@')[0]
+        }),
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        showToast(data.error || 'Failed to resend verification code', 'error');
+        return;
+      }
+      
+      showToast('Verification code sent! Please check your email.', 'success');
+    } catch (error) {
+      console.error('Error resending code:', error);
+      showToast('Failed to resend verification code. Please try again.', 'error');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,6 +196,16 @@ export default function LoginPage() {
         
         if (!response.ok) {
           showToast(data.error || 'Registration failed', 'error');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Show verification step if registration was successful
+        if (data.needsVerification) {
+          setNeedsVerification(true);
+          setStep('verification');
+          setSubtitle('Verify your email address');
+          showToast('Please check your email for a verification code', 'info');
           setIsLoading(false);
           return;
         }
@@ -258,6 +357,24 @@ export default function LoginPage() {
                   <button type="submit" className={styles.btnPrimary} disabled={isLoading}>
                     {isLoading ? 'Please wait...' : (isNewUser ? 'Sign Up' : 'Log In')}
                   </button>
+                </div>
+              )}
+              
+              {/* Step 3: Verification Code Input */}
+              {step === 'verification' && (
+                <div className={styles.formStep}>
+                  <div className={styles.userEmailDisplay}>
+                    <span>{emailUsername}</span>
+                    <button type="button" className={styles.editEmailBtn} onClick={handleEditEmail}>Edit</button>
+                  </div>
+                  
+                  <VerificationForm
+                    verificationCode={verificationCode}
+                    setVerificationCode={setVerificationCode}
+                    onVerify={handleVerifyEmail}
+                    onResend={handleResendCode}
+                    isLoading={isLoading}
+                  />
                 </div>
               )}
             </form>
