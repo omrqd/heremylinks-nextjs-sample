@@ -17,10 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Viewport meta tag - disable zoom on mobile */}
+        {/* Viewport meta tag - minimal restrictions for best compatibility */}
         <meta 
           name="viewport" 
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" 
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" 
         />
         {/* Font Awesome */}
         <link

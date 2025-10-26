@@ -1,581 +1,789 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import styles from './dashboard.module.css';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface BioLink {
   id: string;
   title: string;
-}
-
-interface LinkCard {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  iconClass: string;
-}
-
-interface ProfileData {
-  username: string;
-  displayName: string;
-  bio: string;
-  profileImage: string;
-  platform: 'instagram' | 'facebook' | 'tiktok' | null;
+  url: string;
+  icon?: string;
+  image?: string;
+  layout?: string;
 }
 
 export default function DashboardPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('blocks');
-  const [activeMenuItem, setActiveMenuItem] = useState('All Bio Links');
+  const [profileImage, setProfileImage] = useState('');
+  const [displayName, setDisplayName] = useState('Your Name');
+  const [username, setUsername] = useState('yourname');
+  const [bio, setBio] = useState('Add your bio here');
   const [bioLinks, setBioLinks] = useState<BioLink[]>([]);
-  const [linkCards, setLinkCards] = useState<LinkCard[]>([
-    {
-      id: '1',
-      title: 'Dribbble',
-      description: 'Check this out our shot!',
-      icon: 'fab fa-dribbble',
-      iconClass: styles.dribbbleIcon
-    },
-    {
-      id: '2',
-      title: 'Instagram',
-      description: 'Follow our instagram!',
-      icon: 'fab fa-instagram',
-      iconClass: styles.instagramIcon
-    }
-  ]);
-  const [toastMessage, setToastMessage] = useState('');
-  const [showToast, setShowToast] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData>({
-    username: 'myprofile',
-    displayName: 'My Profile',
-    bio: 'Share all your links in one place!',
-    profileImage: '',
-    platform: null
-  });
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showTikTokModal, setShowTikTokModal] = useState(false);
+  const [tiktokUsername, setTiktokUsername] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Editing states
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [tempName, setTempName] = useState(displayName);
+  const [tempBio, setTempBio] = useState(bio);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Add Link Modal states
+  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [addLinkStep, setAddLinkStep] = useState<'layout' | 'form'>('layout');
+  const [selectedLayout, setSelectedLayout] = useState<string>('');
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkImage, setLinkImage] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const linkImageInputRef = useRef<HTMLInputElement>(null);
 
-  // Extract username from social media URLs
-  const extractSocialMediaInfo = (url: string): { platform: 'instagram' | 'facebook' | 'tiktok' | null; username: string | null } => {
-    try {
-      const urlObj = new URL(url);
-      const hostname = urlObj.hostname.toLowerCase();
-      const pathname = urlObj.pathname;
-
-      // Instagram
-      if (hostname.includes('instagram.com')) {
-        const match = pathname.match(/^\/?(@?[a-zA-Z0-9._]+)\/?/);
-        if (match && match[1]) {
-          const username = match[1].replace('@', '');
-          return { platform: 'instagram', username };
-        }
-      }
-
-      // Facebook
-      if (hostname.includes('facebook.com') || hostname.includes('fb.com')) {
-        const match = pathname.match(/^\/?([a-zA-Z0-9.]+)\/?/);
-        if (match && match[1] && match[1] !== 'profile.php') {
-          return { platform: 'facebook', username: match[1] };
-        }
-      }
-
-      // TikTok
-      if (hostname.includes('tiktok.com')) {
-        const match = pathname.match(/^\/?@?([a-zA-Z0-9._]+)\/?/);
-        if (match && match[1]) {
-          const username = match[1].replace('@', '');
-          return { platform: 'tiktok', username };
-        }
-      }
-
-      return { platform: null, username: null };
-    } catch {
-      return { platform: null, username: null };
-    }
+  const addLink = () => {
+    const newLink: BioLink = {
+      id: Date.now().toString(),
+      title: 'New Link',
+      url: '#'
+    };
+    setBioLinks([...bioLinks, newLink]);
+    setShowAddMenu(false);
   };
 
-  // Fetch real profile data from our scraping API
-  const fetchProfileData = async (platform: string, username: string): Promise<ProfileData> => {
+  const deleteLink = (id: string) => {
+    setBioLinks(bioLinks.filter(link => link.id !== id));
+  };
+
+  const handlePublish = () => {
+    alert('Your page has been published!');
+  };
+
+  const handleTikTokAutofill = async () => {
+    if (!tiktokUsername.trim()) {
+      alert('Please enter a TikTok username');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
       const response = await fetch('/api/scrape-profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ platform, username }),
+        body: JSON.stringify({
+          platform: 'tiktok',
+          username: tiktokUsername.replace('@', '')
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile data');
-      }
-
       const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to scrape profile');
-      }
 
-      return {
-        username: data.username,
-        displayName: data.displayName,
-        bio: data.bio,
-        profileImage: data.profileImage,
-        platform: data.platform
-      };
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      // Return fallback data if scraping fails
-      return {
-        username,
-        displayName: `@${username}`,
-        bio: 'Unable to fetch bio from profile',
-        profileImage: `https://ui-avatars.com/api/?name=${username}&background=random&size=200`,
-        platform: platform as 'instagram' | 'facebook' | 'tiktok'
-      };
-    }
-  };
+      if (data.success) {
+        // Update profile with TikTok data
+        setDisplayName(data.displayName);
+        setUsername(data.username);
+        setBio(data.bio);
+        setProfileImage(data.profileImage);
 
-  // Show toast notification
-  const showToastNotification = (message: string) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
-  };
-
-  // Copy link to clipboard
-  const copyLink = async () => {
-    const linkText = `heremylinks.com/${profileData.username}`;
-    try {
-      await navigator.clipboard.writeText(linkText);
-      showToastNotification('Link copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
-  // Add bio link
-  const addBioLink = (title: string) => {
-    const newLink: BioLink = {
-      id: `link-${Date.now()}`,
-      title
-    };
-    setBioLinks([...bioLinks, newLink]);
-  };
-
-  // Add block
-  const handleBlockClick = (blockLabel: string) => {
-    addBioLink(blockLabel);
-    showToastNotification(`${blockLabel} block added!`);
-  };
-
-  // Handle AI generation
-  const handleGenerate = async () => {
-    if (!urlInput.trim()) {
-      showToastNotification('Please enter a URL');
-      return;
-    }
-
-    try {
-      new URL(urlInput);
-    } catch {
-      showToastNotification('Please enter a valid URL');
-      return;
-    }
-
-    const socialInfo = extractSocialMediaInfo(urlInput);
-
-    if (socialInfo.platform && socialInfo.username) {
-      setIsGenerating(true);
-      showToastNotification(`Fetching ${socialInfo.platform} profile...`);
-      
-      try {
-        // Fetch profile data
-        const data = await fetchProfileData(socialInfo.platform, socialInfo.username);
-        
-        // Update profile information
-        setProfileData(data);
-        
-        // Clear existing links and add new ones based on platform
-        setBioLinks([]);
-        
-        // Add platform-specific link
-        const platformNames: { [key: string]: string } = {
-          instagram: 'Instagram',
-          facebook: 'Facebook',
-          tiktok: 'TikTok'
+        // Add TikTok link to bio links
+        const tiktokLink: BioLink = {
+          id: Date.now().toString(),
+          title: 'TikTok',
+          url: `https://tiktok.com/@${data.username}`,
+          icon: 'fab fa-tiktok'
         };
-        
-        setTimeout(() => {
-          addBioLink(`${platformNames[socialInfo.platform!]} Profile`);
-          addBioLink('Contact Me');
-          addBioLink('More Links');
-        }, 500);
-        
-        setIsGenerating(false);
-        showToastNotification(`Profile loaded from ${platformNames[socialInfo.platform!]}! 🎉`);
-        setUrlInput('');
-        
-      } catch (error) {
-        setIsGenerating(false);
-        showToastNotification('Failed to fetch profile data');
+        setBioLinks([tiktokLink]);
+
+        setShowTikTokModal(false);
+        setTiktokUsername('');
+        alert('Profile autofilled from TikTok! 🎉');
+      } else {
+        alert('Failed to fetch TikTok profile. Please check the username and try again.');
       }
-    } else {
-      // Regular website URL
-      setIsGenerating(true);
-      setTimeout(() => {
-        setIsGenerating(false);
-        showToastNotification('Bio link generated with AI! ✨');
-        addBioLink('My Website');
-        addBioLink('Portfolio');
-        addBioLink('Contact Me');
-      }, 2000);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to fetch TikTok profile. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Delete link card
-  const deleteCard = (id: string, title: string) => {
-    if (confirm(`Delete ${title}?`)) {
-      setLinkCards(linkCards.filter(card => card.id !== id));
-      showToastNotification(`${title} deleted`);
+  // Profile editing handlers
+  const handleNameClick = () => {
+    setTempName(displayName);
+    setIsEditingName(true);
+  };
+
+  const handleNameSave = () => {
+    if (tempName.trim()) {
+      setDisplayName(tempName.trim());
+    }
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleNameSave();
+    } else if (e.key === 'Escape') {
+      setIsEditingName(false);
     }
   };
 
-  // Edit link card
-  const editCard = (title: string) => {
-    showToastNotification(`Editing ${title}...`);
+  const handleBioClick = () => {
+    setTempBio(bio);
+    setIsEditingBio(true);
   };
 
-  // Initialize sample links
-  useEffect(() => {
-    setTimeout(() => {
-      addBioLink('My Website');
-      addBioLink('Instagram');
-      addBioLink('YouTube Channel');
-    }, 500);
-  }, []);
+  const handleBioSave = () => {
+    if (tempBio.trim()) {
+      setBio(tempBio.trim());
+    }
+    setIsEditingBio(false);
+  };
+
+  const handleBioKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleBioSave();
+    } else if (e.key === 'Escape') {
+      setIsEditingBio(false);
+    }
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Add Link Modal handlers
+  const openAddLinkModal = () => {
+    setShowAddLinkModal(true);
+    setAddLinkStep('layout');
+    setSelectedLayout('');
+    setLinkTitle('');
+    setLinkUrl('');
+    setLinkImage('');
+  };
+
+  const closeAddLinkModal = () => {
+    setShowAddLinkModal(false);
+    setAddLinkStep('layout');
+    setSelectedLayout('');
+    setLinkTitle('');
+    setLinkUrl('');
+    setLinkImage('');
+  };
+
+  const handleLayoutSelect = (layout: string) => {
+    setSelectedLayout(layout);
+    setAddLinkStep('form');
+  };
+
+  const handleLinkImageUpload = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLinkImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLinkImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleLinkImageUpload(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleLinkImageUpload(file);
+    }
+  };
+
+  const handleAddLink = () => {
+    if (!linkTitle.trim() || !linkUrl.trim()) {
+      alert('Please fill in both title and URL');
+      return;
+    }
+
+    const newLink: BioLink = {
+      id: Date.now().toString(),
+      title: linkTitle.trim(),
+      url: linkUrl.trim(),
+      icon: selectedLayout.includes('image') ? undefined : 'fas fa-link',
+      image: linkImage || undefined,
+      layout: selectedLayout
+    };
+
+    setBioLinks([...bioLinks, newLink]);
+    closeAddLinkModal();
+    alert('Link added successfully! 🎉');
+  };
+
+  const backToLayoutSelection = () => {
+    setAddLinkStep('layout');
+    setLinkTitle('');
+    setLinkUrl('');
+    setLinkImage('');
+  };
 
   return (
     <div className={styles.dashboardContainer}>
-      {/* Left Sidebar */}
-      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.active : ''}`}>
-        <div className={styles.sidebarHeader}>
-          <div className={styles.sidebarLogo}>
-            <Image src="/imgs/white-logo.png" alt="HereMyLinks" width={120} height={32} />
-          </div>
-          <button 
-            className={styles.sidebarToggle}
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            <i className={`fas fa-chevron-${sidebarOpen ? 'right' : 'left'}`}></i>
+      {/* Top Navigation */}
+      <nav className={styles.topNav}>
+        <div className={styles.navLeft}>
+          <button className={styles.menuBtn}>
+            <i className="fas fa-bars"></i>
+          </button>
+          <Link href="/" className={styles.logoLink}>
+            <Image src="/imgs/logo.png" alt="HereMyLinks" width={140} height={35} priority />
+          </Link>
+        </div>
+        
+        <div className={styles.navRight}>
+          <button className={styles.previewBtn}>
+            <i className="fas fa-eye"></i>
+            <span>Preview</span>
+          </button>
+          <button className={styles.shareBtn}>
+            <i className="fas fa-share-nodes"></i>
+            <span>Share</span>
+          </button>
+          <button className={styles.publishBtn} onClick={handlePublish}>
+            Publish
           </button>
         </div>
-
-        <div className={styles.sidebarContent}>
-          {/* Main Menu */}
-          <div className={styles.menuSection}>
-            <h3 className={styles.menuTitle}>Main Menu</h3>
-            <nav className={styles.menuNav}>
-              {['All Bio Links', 'Media', 'Tags', 'Mentions', 'Search by Profile', 'Search by Hashtags', 'Analytics', 'Integration'].map((item, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  className={`${styles.menuItem} ${activeMenuItem === item ? styles.active : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setActiveMenuItem(item);
-                  }}
-                >
-                  <i className={`fas fa-${['link', 'photo-film', 'tags', 'at', 'user-search', 'hashtag', 'chart-line', 'puzzle-piece'][idx]}`}></i>
-                  <span>{item}</span>
-                </a>
-              ))}
-            </nav>
-          </div>
-
-          {/* Account Section */}
-          <div className={styles.menuSection}>
-            <h3 className={styles.menuTitle}>Account</h3>
-            <nav className={styles.menuNav}>
-              <a href="#" className={styles.menuItem}>
-                <i className="fas fa-gear"></i>
-                <span>Settings</span>
-              </a>
-              <a href="#" className={styles.menuItem}>
-                <i className="fas fa-circle-question"></i>
-                <span>Help & FAQs</span>
-              </a>
-            </nav>
-          </div>
-        </div>
-
-        {/* Logout Button */}
-        <div className={styles.sidebarFooter}>
-          <a href="/" className={styles.logoutBtn}>
-            <i className="fas fa-right-from-bracket"></i>
-            <span>Log Out</span>
-          </a>
-        </div>
-      </aside>
+      </nav>
 
       {/* Main Content */}
-      <main className={styles.mainContent}>
-        {/* Top Bar */}
-        <div className={styles.topBar}>
-          <div className={styles.profileSelector}>
-            <div className={styles.profileIcon}>
-              <i className="fas fa-circle-user"></i>
-            </div>
-            <div className={styles.profileInfo}>
-              <h2 className={styles.profileName}>{profileData.displayName}</h2>
-              <p className={styles.profileLink}>heremylinks.com/{profileData.username}</p>
-            </div>
-            <button className={styles.dropdownBtn}>
-              <i className="fas fa-chevron-down"></i>
-            </button>
-          </div>
-
-          <div className={styles.topBarActions}>
-            <button className={`${styles.iconBtn} ${styles.notificationBtn}`}>
-              <i className="fas fa-bell"></i>
-              <span className={styles.badge}>3</span>
-            </button>
-            <button className={styles.iconBtn}>
-              <i className="fas fa-sun"></i>
-            </button>
-            <button className={styles.iconBtn}>
-              <i className="fas fa-moon"></i>
-            </button>
-            <button className={styles.viewLiveBtn}>
-              <i className="fas fa-eye"></i>
-              <span>View Live</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Link Actions */}
-        <div className={styles.linkActions}>
-          <div className={styles.linkDisplay}>
-            <span className={styles.linkText}>heremylinks.com/{profileData.username}</span>
-          </div>
-          <button className={`${styles.actionBtn} ${styles.copyBtn}`} onClick={copyLink}>
-            <i className="fas fa-copy"></i>
-            Copy link
-          </button>
-          <button className={`${styles.actionBtn} ${styles.addSocialBtn}`}>
-            <i className="fas fa-plus"></i>
-            Add to Social Media Profile
-          </button>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className={styles.tabNavigation}>
-          {['blocks', 'styles', 'settings'].map(tab => (
-            <button
-              key={tab}
-              className={`${styles.tabBtn} ${activeTab === tab ? styles.active : ''}`}
-              onClick={() => {
-                setActiveTab(tab);
-                showToastNotification(`Switched to ${tab} tab`);
-              }}
-            >
-              {tab === 'blocks' ? 'Blocks' : tab === 'styles' ? 'Styles' : 'Page Setting'}
-            </button>
-          ))}
-        </div>
-
-        {/* Mobile Preview */}
-        <div className={styles.mobilePreview}>
+      <div className={styles.mainContent}>
+        {/* Center Preview */}
+        <div className={styles.centerPreview}>
           <div className={styles.phoneMockup}>
-            <div className={styles.phoneHeader}>
-              <span className={styles.phoneTime}>9:41</span>
-              <div className={styles.phoneNotch}></div>
-              <div className={styles.phoneStatus}>
-                <i className="fas fa-signal"></i>
-                <i className="fas fa-wifi"></i>
-                <i className="fas fa-battery-full"></i>
-              </div>
-            </div>
-
-            <div className={styles.phoneContent}>
-              <div className={styles.bioProfile}>
-                <div className={styles.bioAvatar}>
-                  {profileData.profileImage ? (
-                    <img 
-                      src={profileData.profileImage} 
-                      alt={profileData.displayName}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        borderRadius: '50%'
-                      }}
-                    />
-                  ) : (
-                    <i className="fas fa-user"></i>
-                  )}
+            {/* Profile Section */}
+            <div className={styles.profileSection}>
+              <div 
+                className={styles.profileImage} 
+                onClick={handleImageClick}
+                title="Click to upload profile picture"
+              >
+                {profileImage ? (
+                  <img src={profileImage} alt={displayName} />
+                ) : (
+                  <i className="fas fa-user"></i>
+                )}
+                <div className={styles.imageOverlay}>
+                  <i className="fas fa-camera"></i>
                 </div>
-                <h3 className={styles.bioName}>{profileData.displayName}</h3>
-                <p className={styles.bioDescription}>{profileData.bio}</p>
               </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
 
-              {/* Social Icons */}
-              <div className={styles.bioSocial}>
-                {['facebook-f', 'twitter', 'instagram', 'linkedin-in', 'youtube'].map(icon => (
-                  <a key={icon} href="#" className={styles.socialIcon}>
-                    <i className={`fab fa-${icon}`}></i>
-                  </a>
-                ))}
-              </div>
-
-              {/* Bio Links */}
-              <div className={styles.bioLinks}>
-                {bioLinks.map(link => (
-                  <a key={link.id} href="#" className={styles.bioLinkItem}>
-                    {link.title}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.phoneFooter}>
-              <div className={styles.phoneIndicator}></div>
-            </div>
-          </div>
-
-          {/* Link Cards Below Preview */}
-          <div className={styles.linkCards}>
-            {linkCards.map(card => (
-              <div key={card.id} className={styles.linkCard}>
-                <div className={`${styles.cardIcon} ${card.iconClass}`}>
-                  <i className={card.icon}></i>
-                </div>
-                <div className={styles.cardContent}>
-                  <h4 className={styles.cardTitle}>{card.title}</h4>
-                  <p className={styles.cardDescription}>{card.description}</p>
-                </div>
-                <div className={styles.cardActions}>
-                  <button 
-                    className={`${styles.cardBtn} ${styles.editBtn}`}
-                    onClick={() => editCard(card.title)}
+              <div className={styles.nameWrapper}>
+                {isEditingName ? (
+                  <input
+                    type="text"
+                    className={styles.editNameInput}
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    onBlur={handleNameSave}
+                    onKeyDown={handleNameKeyPress}
+                    autoFocus
+                    maxLength={50}
+                  />
+                ) : (
+                  <h2 
+                    className={styles.profileName}
+                    onClick={handleNameClick}
+                    title="Click to edit name"
                   >
-                    <i className="fas fa-pen"></i>
-                  </button>
-                  <button 
-                    className={`${styles.cardBtn} ${styles.deleteBtn}`}
-                    onClick={() => deleteCard(card.id, card.title)}
-                  >
-                    <i className="fas fa-trash"></i>
-                  </button>
-                </div>
+                    {displayName}
+                  </h2>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      </main>
 
-      {/* Right Sidebar */}
-      <aside className={styles.rightSidebar}>
-        <div className={styles.aiBuilder}>
-          <h2 className={styles.builderTitle}>
-            Build Your <span className={styles.highlight}>Bio Link</span> With AI ⚡
-          </h2>
-          <p className={styles.builderDescription}>
-            Paste your Instagram, Facebook, TikTok, or website URL to start!
-          </p>
-          
-          <div className={styles.exampleUrls}>
-            <small className={styles.exampleText}>Try: instagram.com/username, facebook.com/username, tiktok.com/@username</small>
+              <div className={styles.bioWrapper}>
+                {isEditingBio ? (
+                  <textarea
+                    className={styles.editBioInput}
+                    value={tempBio}
+                    onChange={(e) => setTempBio(e.target.value)}
+                    onBlur={handleBioSave}
+                    onKeyDown={handleBioKeyPress}
+                    autoFocus
+                    maxLength={150}
+                    rows={3}
+                  />
+                ) : (
+                  <p 
+                    className={styles.profileBio}
+                    onClick={handleBioClick}
+                    title="Click to edit bio"
+                  >
+                    {bio}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Bio Links */}
+            <div className={styles.bioLinksContainer}>
+              {bioLinks.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyIcon}>
+                    <i className="fas fa-link"></i>
+                  </div>
+                  <p className={styles.emptyText}>
+                    Start by adding links and customize your themes and style
+                  </p>
+                </div>
+              ) : (
+                bioLinks.map((link) => {
+                  const layoutClass = link.layout ? styles[`preview${link.layout.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}`] : styles.previewSimple;
+                  
+                  return (
+                    <div key={link.id} className={`${styles.bioLinkItem} ${layoutClass}`}>
+                      {link.image && link.layout?.includes('image-left') && (
+                        <div className={styles.previewLinkImage}>
+                          <img src={link.image} alt={link.title} />
+                        </div>
+                      )}
+                      
+                      {link.image && (link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
+                        <div className={styles.previewLinkImageTop}>
+                          <img src={link.image} alt={link.title} />
+                        </div>
+                      )}
+                      
+                      <div className={styles.linkContent}>
+                        {link.icon && !link.image && (
+                          <div className={styles.linkIcon}>
+                            <i className={link.icon}></i>
+                          </div>
+                        )}
+                        <span className={styles.linkTitle}>{link.title}</span>
+                      </div>
+                      
+                      {link.image && link.layout?.includes('image-right') && (
+                        <div className={styles.previewLinkImage}>
+                          <img src={link.image} alt={link.title} />
+                        </div>
+                      )}
+                      
+                      <button 
+                        className={styles.deleteLinkBtn}
+                        onClick={() => deleteLink(link.id)}
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
 
-          <div className={styles.urlInputGroup}>
-            <input
-              type="url"
-              className={styles.urlInput}
-              placeholder="https://instagram.com/username"
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleGenerate()}
-            />
-            <button 
-              className={styles.generateBtn}
-              onClick={handleGenerate}
-              disabled={isGenerating}
-            >
-              {isGenerating ? 'Generating...' : 'Generate'}
+          {/* Add/Edit Buttons */}
+          <div className={styles.actionButtons}>
+            <button className={styles.addBtn} onClick={() => setShowAddMenu(!showAddMenu)}>
+              <i className="fas fa-plus"></i>
+            </button>
+            <button className={styles.editBtn}>
+              <i className="fas fa-pen"></i>
             </button>
           </div>
         </div>
 
-        {/* Theme Recommendation */}
-        <div className={styles.themeSection}>
-          <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>Theme Recommendation</h3>
-            <a href="#" className={styles.seeAllLink}>See All Theme</a>
-          </div>
-          <div className={styles.themeGrid}>
-            {['dark', 'light', 'gradient', 'minimal'].map(theme => (
-              <div key={theme} className={`${styles.themeCard} ${styles[`theme${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
-                <div className={styles.themePreview}>
-                  <div className={styles.themeMockup}>
-                    <div className={styles.themeAvatar}></div>
-                    <div className={styles.themeBar}></div>
-                    <div className={styles.themeBar}></div>
-                    <div className={styles.themeBar}></div>
-                  </div>
+        {/* Right Sidebar - Add Menu */}
+        <aside className={styles.rightSidebar}>
+          <div className={styles.addSection}>
+            <h3 className={styles.addTitle}>add</h3>
+            
+            <div className={styles.addOptions}>
+              <button className={styles.addOption} onClick={openAddLinkModal}>
+                <div className={styles.optionIcon}>
+                  <i className="fas fa-link"></i>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Add More Blocks */}
-        <div className={styles.blocksSection}>
-          <h3 className={styles.sectionTitle}>Add More Blocks</h3>
-          <div className={styles.blocksGrid}>
-            {[
-              { label: 'Text', icon: 'font', color: 'text' },
-              { label: 'Calendar', icon: 'calendar', color: 'calendar' },
-              { label: 'Booking List', icon: 'list-check', color: 'booking' },
-              { label: 'Button', icon: 'square', color: 'button' },
-              { label: 'Link', icon: 'link', color: 'link' },
-              { label: 'Image', icon: 'image', color: 'image' },
-              { label: 'Map', icon: 'map-location-dot', color: 'map' },
-              { label: 'Newsletter', icon: 'envelope', color: 'newsletter' }
-            ].map(block => (
-              <button
-                key={block.label}
-                className={`${styles.blockItem} ${styles[`${block.color}Block`]}`}
-                onClick={() => handleBlockClick(block.label)}
-              >
-                <div className={styles.blockIcon}>
-                  <i className={`fas fa-${block.icon}`}></i>
+                <div className={styles.optionContent}>
+                  <h4 className={styles.optionTitle}>link</h4>
+                  <p className={styles.optionDescription}>add any link, any style</p>
                 </div>
-                <span className={styles.blockLabel}>{block.label}</span>
+                <i className="fas fa-chevron-right"></i>
               </button>
-            ))}
-          </div>
-        </div>
-      </aside>
 
-      {/* Toast Notification */}
-      <div className={`${styles.toast} ${showToast ? styles.show : ''}`}>
-        <i className="fas fa-check-circle"></i>
-        <span className={styles.toastMessage}>{toastMessage}</span>
+              <button className={styles.addOption}>
+                <div className={styles.optionIcon}>
+                  <i className="fas fa-hashtag"></i>
+                </div>
+                <div className={styles.optionContent}>
+                  <h4 className={styles.optionTitle}>socials</h4>
+                  <p className={styles.optionDescription}>connect your social platforms</p>
+                </div>
+                <i className="fas fa-chevron-right"></i>
+              </button>
+
+              <button className={styles.addOption}>
+                <div className={styles.optionIcon}>
+                  <i className="fas fa-palette"></i>
+                </div>
+                <div className={styles.optionContent}>
+                  <h4 className={styles.optionTitle}>design & templates</h4>
+                  <p className={styles.optionDescription}>customize your page style</p>
+                </div>
+                <i className="fas fa-chevron-right"></i>
+              </button>
+
+              <button className={styles.addOption} onClick={() => setShowTikTokModal(true)}>
+                <div className={styles.optionIcon}>
+                  <i className="fab fa-tiktok"></i>
+                </div>
+                <div className={styles.optionContent}>
+                  <h4 className={styles.optionTitle}>autofill from tiktok</h4>
+                  <p className={styles.optionDescription}>import your tiktok profile info</p>
+                </div>
+                <i className="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </aside>
       </div>
 
-      {/* Mobile Hamburger */}
-      {typeof window !== 'undefined' && window.innerWidth <= 768 && (
-        <button
-          className={styles.hamburgerBtn}
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          <i className="fas fa-bars"></i>
-        </button>
+      {/* TikTok Autofill Modal */}
+      {showTikTokModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowTikTokModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Autofill from TikTok</h3>
+              <button 
+                className={styles.modalClose}
+                onClick={() => setShowTikTokModal(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              <p className={styles.modalDescription}>
+                Enter your TikTok username to automatically import your profile picture, name, and bio.
+              </p>
+              
+              <div className={styles.inputGroup}>
+                <div className={styles.inputIcon}>
+                  <i className="fab fa-tiktok"></i>
+                </div>
+                <input
+                  type="text"
+                  className={styles.modalInput}
+                  placeholder="@username or username"
+                  value={tiktokUsername}
+                  onChange={(e) => setTiktokUsername(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleTikTokAutofill()}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className={styles.modalActions}>
+                <button 
+                  className={styles.cancelBtn}
+                  onClick={() => setShowTikTokModal(false)}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className={styles.importBtn}
+                  onClick={handleTikTokAutofill}
+                  disabled={isLoading || !tiktokUsername.trim()}
+                >
+                  {isLoading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-download"></i>
+                      Import Profile
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Link Modal */}
+      {showAddLinkModal && (
+        <div className={styles.addLinkOverlay} onClick={closeAddLinkModal}>
+          <div className={styles.addLinkModal} onClick={(e) => e.stopPropagation()}>
+            {addLinkStep === 'layout' ? (
+              <>
+                {/* Layout Selection Step */}
+                <div className={styles.modalHeader}>
+                  <button 
+                    className={styles.modalBack}
+                    onClick={closeAddLinkModal}
+                  >
+                    <i className="fas fa-chevron-left"></i>
+                  </button>
+                  <h3 className={styles.modalTitle}>add link</h3>
+                  <div style={{ width: '32px' }}></div>
+                </div>
+                
+                <div className={styles.addLinkBody}>
+                  <div className={styles.layoutSelectionHeader}>
+                    <h4 className={styles.layoutTitle}>select link layout</h4>
+                    <p className={styles.layoutSubtitle}>you can change this anytime</p>
+                  </div>
+
+                  <div className={styles.layoutOptions}>
+                    {/* Layout 1 - Simple Text */}
+                    <button 
+                      className={styles.layoutOption}
+                      onClick={() => handleLayoutSelect('simple')}
+                    >
+                      <div className={styles.layoutPreview}>
+                        <div className={styles.simpleLayout}>
+                          <span>link title ...</span>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Layout 2 - Image Left + Text Right */}
+                    <button 
+                      className={styles.layoutOption}
+                      onClick={() => handleLayoutSelect('image-left')}
+                    >
+                      <div className={styles.layoutPreview}>
+                        <div className={styles.imageLeftLayout}>
+                          <div className={styles.layoutImagePlaceholder}>
+                            <span>image</span>
+                          </div>
+                          <span>link title ...</span>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Layout 3 - Image Right + Text Left */}
+                    <button 
+                      className={styles.layoutOption}
+                      onClick={() => handleLayoutSelect('image-right')}
+                    >
+                      <div className={styles.layoutPreview}>
+                        <div className={styles.imageRightLayout}>
+                          <div className={styles.layoutImagePlaceholder}>
+                            <span>image</span>
+                          </div>
+                          <span>link title ...</span>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Layout 4 - Image Top + Text Bottom (Grid Left) */}
+                    <button 
+                      className={styles.layoutOption}
+                      onClick={() => handleLayoutSelect('image-top-left')}
+                    >
+                      <div className={styles.layoutPreview}>
+                        <div className={styles.imageTopLayout}>
+                          <div className={styles.layoutImagePlaceholder}>
+                            <span>image</span>
+                          </div>
+                          <span>link title ...</span>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Layout 5 - Image Top + Text Bottom (Grid Right) */}
+                    <button 
+                      className={styles.layoutOption}
+                      onClick={() => handleLayoutSelect('image-top-right')}
+                    >
+                      <div className={styles.layoutPreview}>
+                        <div className={styles.imageTopLayout}>
+                          <div className={styles.layoutImagePlaceholder}>
+                            <span>image</span>
+                          </div>
+                          <span>link title ...</span>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Layout 6 - Large Image */}
+                    <button 
+                      className={styles.layoutOption}
+                      onClick={() => handleLayoutSelect('image-large')}
+                    >
+                      <div className={styles.layoutPreview}>
+                        <div className={styles.imageLargeLayout}>
+                          <div className={styles.layoutImagePlaceholder}>
+                            <span>image</span>
+                          </div>
+                          <span>link title ...</span>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Form Step */}
+                <div className={styles.modalHeader}>
+                  <button 
+                    className={styles.modalBack}
+                    onClick={backToLayoutSelection}
+                  >
+                    <i className="fas fa-chevron-left"></i>
+                  </button>
+                  <h3 className={styles.modalTitle}>add link</h3>
+                  <div style={{ width: '32px' }}></div>
+                </div>
+                
+                <div className={styles.addLinkBody}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Link Title</label>
+                    <input
+                      type="text"
+                      className={styles.formInput}
+                      placeholder="Enter link title"
+                      value={linkTitle}
+                      onChange={(e) => setLinkTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Link URL</label>
+                    <input
+                      type="url"
+                      className={styles.formInput}
+                      placeholder="https://example.com"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                    />
+                  </div>
+
+                  {selectedLayout !== 'simple' && (
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Link Image (Optional)</label>
+                      <div 
+                        className={`${styles.imageDropZone} ${isDragging ? styles.dragging : ''} ${linkImage ? styles.hasImage : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => linkImageInputRef.current?.click()}
+                      >
+                        {linkImage ? (
+                          <div className={styles.uploadedImage}>
+                            <img src={linkImage} alt="Link preview" />
+                            <button 
+                              className={styles.removeImageBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLinkImage('');
+                              }}
+                            >
+                              <i className="fas fa-times"></i>
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <i className="fas fa-cloud-upload-alt"></i>
+                            <p className={styles.dropZoneText}>
+                              Drag and drop or <span>click to upload</span>
+                            </p>
+                            <p className={styles.dropZoneHint}>PNG, JPG up to 5MB</p>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        ref={linkImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLinkImageInputChange}
+                        style={{ display: 'none' }}
+                      />
+                    </div>
+                  )}
+
+                  <div className={styles.formActions}>
+                    <button 
+                      className={styles.cancelFormBtn}
+                      onClick={closeAddLinkModal}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className={styles.addLinkBtn}
+                      onClick={handleAddLink}
+                      disabled={!linkTitle.trim() || !linkUrl.trim()}
+                    >
+                      Add Link
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 }
-
