@@ -13,6 +13,12 @@ interface User extends RowDataPacket {
   theme_color: string | null;
   background_color: string | null;
   template: string | null;
+  background_image: string | null;
+  background_video: string | null;
+  card_background_color: string | null;
+  card_background_image: string | null;
+  card_background_video: string | null;
+  custom_text: string | null;
   is_published: boolean;
 }
 
@@ -26,7 +32,9 @@ export async function GET(request: NextRequest) {
     }
 
     const [rows] = await db.query<User[]>(
-      `SELECT id, username, email, name, bio, profile_image, theme_color, background_color, template, is_published 
+      `SELECT id, username, email, name, bio, profile_image, theme_color, background_color, template, 
+              background_image, background_video, card_background_color, card_background_image, 
+              card_background_video, custom_text, is_published 
        FROM users WHERE email = ? LIMIT 1`,
       [session.user.email]
     );
@@ -48,6 +56,12 @@ export async function GET(request: NextRequest) {
         themeColor: user.theme_color,
         backgroundColor: user.background_color,
         template: user.template || 'default',
+        backgroundImage: user.background_image,
+        backgroundVideo: user.background_video,
+        cardBackgroundColor: user.card_background_color || '#ffffff',
+        cardBackgroundImage: user.card_background_image,
+        cardBackgroundVideo: user.card_background_video,
+        customText: user.custom_text,
         isPublished: user.is_published,
       },
     });
@@ -77,6 +91,12 @@ export async function PATCH(request: NextRequest) {
       themeColor,
       backgroundColor,
       template,
+      backgroundImage,
+      backgroundVideo,
+      cardBackgroundColor,
+      cardBackgroundImage,
+      cardBackgroundVideo,
+      customText,
       isPublished,
       username,
     } = body;
@@ -142,6 +162,30 @@ export async function PATCH(request: NextRequest) {
     if (template !== undefined) {
       updates.push('template = ?');
       values.push(template);
+    }
+    if (backgroundImage !== undefined) {
+      updates.push('background_image = ?');
+      values.push(backgroundImage);
+    }
+    if (backgroundVideo !== undefined) {
+      updates.push('background_video = ?');
+      values.push(backgroundVideo);
+    }
+    if (cardBackgroundColor !== undefined) {
+      updates.push('card_background_color = ?');
+      values.push(cardBackgroundColor);
+    }
+    if (cardBackgroundImage !== undefined) {
+      updates.push('card_background_image = ?');
+      values.push(cardBackgroundImage);
+    }
+    if (cardBackgroundVideo !== undefined) {
+      updates.push('card_background_video = ?');
+      values.push(cardBackgroundVideo);
+    }
+    if (customText !== undefined) {
+      updates.push('custom_text = ?');
+      values.push(customText);
     }
     if (isPublished !== undefined) {
       updates.push('is_published = ?');

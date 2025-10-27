@@ -132,3 +132,146 @@ input, button, a, img, svg {
     }
 }
 
+
+/* ==================== FILE UPLOAD COMPONENT STYLES ==================== */
+.file-upload {
+  width: 100%;
+}
+
+.file-upload .dropZone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  background: #fafbfc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-upload .dropZone:hover {
+  border-color: #667eea;
+  background: #f5f7ff;
+  transform: translateY(-2px);
+}
+
+.file-upload .dropZone.dragging {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f0f4ff 0%, #f5f0ff 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+}
+
+.file-upload .uploadPrompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-upload .uploadPrompt i {
+  font-size: 42px;
+  color: #667eea;
+  margin-bottom: 8px;
+}
+
+.file-upload .dropZone.dragging .uploadPrompt i {
+  transform: scale(1.1);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.file-upload .uploadPrompt p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.file-upload .uploadPrompt p:first-of-type {
+  font-size: 15px;
+  color: #374151;
+}
+
+.file-upload .uploadPrompt strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.file-upload .imagePreview {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.file-upload .imagePreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.file-upload .removeImageBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.file-upload .removeImageBtn:hover {
+  background: rgba(220, 38, 38, 0.9);
+  transform: scale(1.1);
+}
+
+.file-upload .error-message {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.file-upload .error-message::before {
+  content: "⚠️";
+}
+
+@media (max-width: 768px) {
+  .file-upload .dropZone {
+    min-height: 150px;
+    padding: 24px 16px;
+  }
+
+  .file-upload .uploadPrompt i {
+    font-size: 36px;
+  }
+
+  .file-upload .imagePreview {
+    height: 180px;
+  }
+}

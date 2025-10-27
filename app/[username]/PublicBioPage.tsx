@@ -12,6 +12,12 @@ interface User {
   themeColor: string;
   backgroundColor: string;
   template: string;
+  backgroundImage: string;
+  backgroundVideo: string;
+  cardBackgroundColor: string;
+  cardBackgroundImage: string;
+  cardBackgroundVideo: string;
+  customText: string;
 }
 
 interface BioLink {
@@ -54,8 +60,71 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
   };
 
   return (
-    <div className={styles.publicBioContainer} style={{ backgroundColor: user.backgroundColor }}>
-      <div className={`${styles.bioCard} ${user.template === 'template1' ? styles.template1 : ''}`}>
+    <div 
+      className={styles.publicBioContainer} 
+      style={{ 
+        backgroundColor: user.backgroundColor,
+        backgroundImage: user.backgroundImage ? `url(${user.backgroundImage})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        position: 'relative'
+      }}
+    >
+      {/* Page Background Video */}
+      {user.backgroundVideo && (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className={styles.backgroundVideo}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0,
+          }}
+        >
+          <source src={user.backgroundVideo} type="video/mp4" />
+        </video>
+      )}
+
+      <div 
+        className={`${styles.bioCard} ${user.template === 'template1' ? styles.template1 : user.template === 'template2' ? styles.template2 : ''}`}
+        style={{
+          backgroundColor: user.cardBackgroundColor,
+          backgroundImage: user.cardBackgroundImage ? `url(${user.cardBackgroundImage})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {/* Card Background Video */}
+        {user.cardBackgroundVideo && (
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={styles.cardBackgroundVideo}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              zIndex: 0,
+              borderRadius: '24px',
+            }}
+          >
+            <source src={user.cardBackgroundVideo} type="video/mp4" />
+          </video>
+        )}
         {/* Profile Section */}
         <div className={styles.profileSection}>
           <div className={styles.profileImageWrapper}>
@@ -119,7 +188,7 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
                   )}
 
                   {/* Image Top Layouts */}
-                  {link.image && (link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
+                  {link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
                     <div className={styles.linkImageTop}>
                       <img src={link.image} alt={link.title} />
                     </div>
@@ -145,6 +214,13 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
             })
           )}
         </div>
+
+        {/* Custom Text Section */}
+        {user.customText && (
+          <div className={styles.customTextSection}>
+            <p className={styles.customText}>{user.customText}</p>
+          </div>
+        )}
 
         {/* Footer */}
         <div className={styles.footer}>

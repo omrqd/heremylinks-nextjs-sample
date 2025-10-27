@@ -17,6 +17,9 @@
     border-radius: 24px;
     padding: 48px 40px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
 }
 
 /* Profile Section */
@@ -26,10 +29,14 @@
     align-items: center;
     text-align: center;
     margin-bottom: 0;
+    position: relative;
+    z-index: 10;
 }
 
 .profileImageWrapper {
     margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
 }
 
 .profileImage {
@@ -60,6 +67,8 @@
     font-weight: 700;
     color: #1a1a1a;
     margin: 0 0 12px 0;
+    position: relative;
+    z-index: 1;
 }
 
 .profileBio {
@@ -68,6 +77,8 @@
     line-height: 1.6;
     margin: 0;
     max-width: 500px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Social Icons */
@@ -79,6 +90,8 @@
     padding: 12px 0;
     margin: 12px 0 28px 0;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 10;
 }
 
 .socialIcon {
@@ -125,6 +138,8 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: relative;
+    z-index: 10;
 }
 
 .bioLink {
@@ -144,6 +159,8 @@
     text-align: left;
     width: 100%;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
 }
 
 .bioLink:hover {
@@ -259,6 +276,8 @@
     padding-top: 32px;
     border-top: 1px solid #e5e7eb;
     text-align: center;
+    position: relative;
+    z-index: 10;
 }
 
 .footerLink {
@@ -469,4 +488,248 @@
 
 .bioCard.template1 .linkImageTop {
     border-radius: 16px;
+}
+
+/* ==================== TEMPLATE 2 STYLES (Ocean Gradient) ==================== */
+.publicBioContainer:has(.bioCard.template2) {
+    background: #2D3E7E !important;
+}
+
+.bioCard.template2 {
+    background: #5885B3;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 520px;
+    border-radius: 32px;
+    overflow: hidden;
+    margin: 40px auto;
+}
+
+/* Profile Section */
+.bioCard.template2 .profileSection {
+    background: #6BC5D2;
+    padding: 56px 40px 40px 40px;
+    margin: 0;
+}
+
+.bioCard.template2 .profileImageWrapper {
+    border: 4px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.bioCard.template2 .profileImage {
+    border-radius: 50%;
+}
+
+.bioCard.template2 .profileName {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 26px;
+    margin-top: 24px;
+}
+
+.bioCard.template2 .profileBio {
+    color: #ffffff;
+    font-size: 16px;
+    margin-top: 12px;
+    opacity: 0.95;
+}
+
+/* Social Icons */
+.bioCard.template2 .socialIconsContainer {
+    background: #6BC5D2;
+    padding: 0 40px 28px 40px;
+    margin: 0;
+}
+
+.bioCard.template2 .socialIcon {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    box-shadow: none;
+}
+
+.bioCard.template2 .socialIcon:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px) scale(1.05);
+}
+
+/* Bio Links Section */
+.bioCard.template2 .bioLinksSection {
+    background: #5885B3;
+    padding: 32px 40px 40px 40px;
+}
+
+/* Bio Links */
+.bioCard.template2 .bioLink {
+    background: transparent;
+    border: 2.5px solid rgba(255, 255, 255, 0.85);
+    border-radius: 50px;
+    padding: 16px 28px;
+    box-shadow: none;
+    transition: all 0.3s ease;
+}
+
+.bioCard.template2 .bioLink:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.bioCard.template2 .linkTitle {
+    color: #ffffff;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.bioCard.template2 .linkIcon {
+    background: transparent;
+    color: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Link Images in Template2 */
+.bioCard.template2 .linkImageLeft,
+.bioCard.template2 .linkImageRight {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.bioCard.template2 .linkImageLeft img,
+.bioCard.template2 .linkImageRight img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bioCard.template2 .linkImageTop {
+    border-radius: 16px;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    margin-bottom: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .bioCard.template2 {
+        margin: 20px;
+        border-radius: 28px;
+        max-width: calc(100% - 40px);
+    }
+
+    .bioCard.template2 .profileSection {
+        padding: 48px 32px 32px 32px;
+    }
+
+    .bioCard.template2 .socialIconsContainer {
+        padding: 0 32px 24px 32px;
+    }
+
+    .bioCard.template2 .bioLink {
+        padding: 14px 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .bioCard.template2 {
+        margin: 0;
+        border-radius: 0;
+        max-width: 100%;
+    }
+
+    .bioCard.template2 .profileSection {
+        padding: 40px 28px 28px 28px;
+    }
+
+    .bioCard.template2 .profileName {
+        font-size: 24px;
+    }
+
+    .bioCard.template2 .profileBio {
+        font-size: 15px;
+    }
+
+    .bioCard.template2 .socialIconsContainer {
+        padding: 0 28px 20px 28px;
+    }
+
+    .bioCard.template2 .bioLinksSection {
+        padding: 28px;
+    }
+
+    .bioCard.template2 .bioLink {
+        padding: 12px 20px;
+    }
+
+    .bioCard.template2 .linkImageLeft,
+    .bioCard.template2 .linkImageRight {
+        width: 48px;
+        height: 48px;
+    }
+}
+
+/* ==================== BACKGROUND VIDEO & CUSTOM TEXT ==================== */
+.backgroundVideo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
+
+.customTextSection {
+    padding: 32px 40px;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+.customText {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #4b5563;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+/* Template-specific custom text styles */
+.bioCard.template1 .customTextSection {
+    border-top: 3px solid #000000;
+    background: #ffffff;
+}
+
+.bioCard.template1 .customText {
+    color: #000000;
+    font-weight: 500;
+}
+
+.bioCard.template2 .customTextSection {
+    background: #5885B3;
+    padding: 24px 40px;
+}
+
+.bioCard.template2 .customText {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .customTextSection {
+        padding: 24px 32px;
+    }
+}
+
+@media (max-width: 480px) {
+    .customTextSection {
+        padding: 20px 24px;
+    }
+
+    .customText {
+        font-size: 14px;
+    }
 }

@@ -12,6 +12,12 @@ interface User extends RowDataPacket {
   theme_color: string | null;
   background_color: string | null;
   template: string | null;
+  background_image: string | null;
+  background_video: string | null;
+  card_background_color: string | null;
+  card_background_image: string | null;
+  card_background_video: string | null;
+  custom_text: string | null;
   is_published: boolean;
 }
 
@@ -35,7 +41,9 @@ interface SocialLink extends RowDataPacket {
 async function getUserByUsername(username: string) {
   try {
     const [rows] = await db.query<User[]>(
-      `SELECT id, username, name, bio, profile_image, theme_color, background_color, template, is_published
+      `SELECT id, username, name, bio, profile_image, theme_color, background_color, template, 
+              background_image, background_video, card_background_color, card_background_image,
+              card_background_video, custom_text, is_published
        FROM users WHERE LOWER(username) = LOWER(?) AND is_published = TRUE LIMIT 1`,
       [username]
     );
@@ -112,6 +120,12 @@ export default async function UsernamePage({ params }: { params: { username: str
         themeColor: user.theme_color || '#667eea',
         backgroundColor: user.background_color || '#ffffff',
         template: user.template || 'default',
+        backgroundImage: user.background_image || '',
+        backgroundVideo: user.background_video || '',
+        cardBackgroundColor: user.card_background_color || '#ffffff',
+        cardBackgroundImage: user.card_background_image || '',
+        cardBackgroundVideo: user.card_background_video || '',
+        customText: user.custom_text || '',
       }}
       links={links.map(link => ({
         id: link.id,

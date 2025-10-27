@@ -10,6 +10,7 @@ interface FileUploadProps {
   currentImage?: string;
   buttonText?: string;
   hideButton?: boolean;
+  showPreview?: boolean; // allow hiding preview when component is used invisibly
 }
 
 const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
@@ -18,18 +19,19 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
   className = '',
   currentImage,
   buttonText = 'Upload Image',
-  hideButton = false
+  hideButton = false,
+  showPreview = true
 }, ref) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage || null);
   const localFileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   // Use the forwarded ref if provided, otherwise use local ref
   const fileInputRef = (ref as React.RefObject<HTMLInputElement>) || localFileInputRef;
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const processFile = async (file: File) => {
     if (!file) return;
 
     // Check file type
@@ -48,11 +50,9 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
     setIsUploading(true);
 
     try {
-      // Create form data
       const formData = new FormData();
       formData.append('file', file);
 
-      // Upload the file
       const response = await fetch(`/api/upload?type=${uploadType}`, {
         method: 'POST',
         body: formData,
@@ -64,7 +64,6 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
         throw new Error(data.error || 'Upload failed');
       }
 
-      // Set preview and call the callback
       setPreviewUrl(data.fileUrl);
       onUploadComplete(data.fileUrl);
     } catch (err) {
@@ -74,13 +73,57 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  // Drag & drop handlers (used for link image uploads)
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
 
   return (
     <div className={`file-upload ${className}`}>
-      {/* Removed preview image to prevent duplication */}
+      {showPreview && previewUrl && (
+        <div className="imagePreview">
+          <Image 
+            src={previewUrl} 
+            alt="Preview" 
+            fill
+            style={{ objectFit: 'cover' }}
+          />
+          <button 
+            onClick={() => {
+              setPreviewUrl(null);
+              onUploadComplete('');
+            }}
+            className="removeImageBtn"
+            type="button"
+          >
+            <i className="fas fa-times" />
+          </button>
+        </div>
+      )}
       
       <input
         type="file"
@@ -91,7 +134,36 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
         id={uploadType === 'link' ? 'linkImageInput' : undefined}
       />
 
-      {!hideButton && (
+      {/* For link uploads, show drag-and-drop zone instead of a button */}
+      {uploadType === 'link' && !previewUrl && (
+        <div 
+          className={`dropZone ${isDragging ? 'dragging' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={triggerFileInput}
+          role="button"
+          aria-label="Upload link image"
+        >
+          <div className="uploadPrompt">
+            {isUploading ? (
+              <>
+                <i className="fas fa-spinner fa-spin" />
+                <p>Uploading image…</p>
+              </>
+            ) : (
+              <>
+                <i className="fas fa-cloud-upload-alt" style={{ fontSize: '24px', marginBottom: '12px' }}></i>
+                <p><strong>Click to upload</strong> or drag and drop</p>
+                <p>SVG, PNG, JPG or GIF (max. 800x400px)</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* For profile uploads, optionally show a minimal button if requested; default hide */}
+      {uploadType === 'profile' && !hideButton && !previewUrl && (
         <button
           type="button"
           onClick={triggerFileInput}
@@ -102,14 +174,18 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
             backgroundColor: '#3b82f6',
             color: 'white',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: '8px',
             cursor: isUploading ? 'not-allowed' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          {isUploading ? 'Uploading...' : buttonText}
+          {isUploading ? (
+            <>
+              <i className="fas fa-spinner fa-spin" style={{ marginRight: 8 }} /> Uploading...
+            </>
+          ) : buttonText}
         </button>
       )}
 

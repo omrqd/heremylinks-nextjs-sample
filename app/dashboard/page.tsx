@@ -76,7 +76,7 @@ function SortableLinkItem({ link, onDelete }: { link: BioLink; onDelete: (id: st
         </div>
       )}
       
-      {link.image && (link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
+      {link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
         <div className={styles.previewLinkImageTop}>
           <img src={link.image} alt={link.title} />
         </div>
@@ -149,8 +149,10 @@ export default function DashboardPage() {
   const [tempBio, setTempBio] = useState(bio);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Add Link Modal states
-  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  // Active section state - tracks which inline section is open
+  const [activeSection, setActiveSection] = useState<'none' | 'addLink' | 'socials' | 'templates' | 'tiktok'>('none');
+
+  // Add Link Section states
   const [addLinkStep, setAddLinkStep] = useState<'layout' | 'form'>('layout');
   const [selectedLayout, setSelectedLayout] = useState<string>('');
   const [linkTitle, setLinkTitle] = useState('');
@@ -161,14 +163,24 @@ export default function DashboardPage() {
 
   // Socials states
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [showSocialsModal, setShowSocialsModal] = useState(false);
   const [socialsStep, setSocialsStep] = useState<'platforms' | 'input'>('platforms');
   const [selectedPlatform, setSelectedPlatform] = useState<{ name: string; icon: string } | null>(null);
   const [socialUrl, setSocialUrl] = useState('');
 
   // Templates states
-  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('default');
+
+  // Bottom action buttons states
+  const [showEditMenu, setShowEditMenu] = useState(false);
+  const [showAddTextModal, setShowAddTextModal] = useState(false);
+  const [addTextContent, setAddTextContent] = useState('');
+  const [customText, setCustomText] = useState('');
+  const [backgroundImage, setBackgroundImage] = useState('');
+  const [backgroundVideo, setBackgroundVideo] = useState('');
+  const [cardBackgroundColor, setCardBackgroundColor] = useState('#ffffff');
+  const [cardBackgroundImage, setCardBackgroundImage] = useState('');
+  const [cardBackgroundVideo, setCardBackgroundVideo] = useState('');
+  const [isUploadingBackground, setIsUploadingBackground] = useState(false);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -227,6 +239,12 @@ export default function DashboardPage() {
           setProfileImage(user.profileImage || '');
           setIsPublished(user.isPublished || false);
           setSelectedTemplate(user.template || 'default');
+          setCustomText(user.customText || '');
+          setBackgroundImage(user.backgroundImage || '');
+          setBackgroundVideo(user.backgroundVideo || '');
+          setCardBackgroundColor(user.cardBackgroundColor || '#ffffff');
+          setCardBackgroundImage(user.cardBackgroundImage || '');
+          setCardBackgroundVideo(user.cardBackgroundVideo || '');
           
           // Check if user has set a custom username (not auto-generated)
           const usernamePattern = /^[a-z]+\d+$/; // Matches auto-generated pattern like "john123"
@@ -511,9 +529,9 @@ export default function DashboardPage() {
     }
   };
 
-  // Add Link Modal handlers
-  const openAddLinkModal = () => {
-    setShowAddLinkModal(true);
+  // Add Link Section handlers (changed from modal to inline)
+  const openAddLinkSection = () => {
+    setActiveSection('addLink');
     setAddLinkStep('layout');
     setSelectedLayout('');
     setLinkTitle('');
@@ -521,8 +539,8 @@ export default function DashboardPage() {
     setLinkImage('');
   };
 
-  const closeAddLinkModal = () => {
-    setShowAddLinkModal(false);
+  const closeAddLinkSection = () => {
+    setActiveSection('none');
     setAddLinkStep('layout');
     setSelectedLayout('');
     setLinkTitle('');
@@ -549,12 +567,19 @@ export default function DashboardPage() {
 
     try {
       setIsSaving(true);
+      
+      // Ensure URL has http:// or https:// prefix
+      let formattedUrl = linkUrl.trim();
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      
       const response = await fetch('/api/links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: linkTitle.trim(),
-          url: linkUrl.trim(),
+          url: formattedUrl,
           icon: selectedLayout.includes('image') ? undefined : 'fas fa-link',
           image: linkImage || undefined,
           layout: selectedLayout,
@@ -565,7 +590,7 @@ export default function DashboardPage() {
       if (response.ok) {
         const { link } = await response.json();
         setBioLinks([...bioLinks, link]);
-        closeAddLinkModal();
+        closeAddLinkSection();
         showToast('Link added successfully! 🎉', 'success');
       } else {
         showToast('Failed to add link', 'error');
@@ -604,15 +629,15 @@ export default function DashboardPage() {
     { name: 'Website', icon: 'fas fa-globe' },
   ];
 
-  const openSocialsModal = () => {
-    setShowSocialsModal(true);
+  const openSocialsSection = () => {
+    setActiveSection('socials');
     setSocialsStep('platforms');
     setSelectedPlatform(null);
     setSocialUrl('');
   };
 
-  const closeSocialsModal = () => {
-    setShowSocialsModal(false);
+  const closeSocialsSection = () => {
+    setActiveSection('none');
     setSocialsStep('platforms');
     setSelectedPlatform(null);
     setSocialUrl('');
@@ -649,7 +674,7 @@ export default function DashboardPage() {
       if (response.ok) {
         const { social } = await response.json();
         setSocialLinks([...socialLinks, social]);
-        closeSocialsModal();
+        closeSocialsSection();
         showToast('Social link added successfully! 🎉', 'success');
       } else {
         showToast('Failed to add social link', 'error');
@@ -696,14 +721,20 @@ export default function DashboardPage() {
       description: 'Bold black borders with clean white background',
       preview: '/imgs/template1.png',
     },
+    {
+      id: 'template2',
+      name: 'Ocean Gradient',
+      description: 'Teal to blue gradient with elegant link cards',
+      preview: '/imgs/template2.png',
+    },
   ];
 
-  const openTemplatesModal = () => {
-    setShowTemplatesModal(true);
+  const openTemplatesSection = () => {
+    setActiveSection('templates');
   };
 
-  const closeTemplatesModal = () => {
-    setShowTemplatesModal(false);
+  const closeTemplatesSection = () => {
+    setActiveSection('none');
   };
 
   const handleTemplateSelect = async (templateId: string) => {
@@ -718,7 +749,7 @@ export default function DashboardPage() {
 
       if (response.ok) {
         setSelectedTemplate(templateId);
-        closeTemplatesModal();
+        closeTemplatesSection();
         showToast('Template applied successfully! 🎨', 'success');
       } else {
         showToast('Failed to apply template', 'error');
@@ -729,6 +760,16 @@ export default function DashboardPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const openTikTokSection = () => {
+    setActiveSection('tiktok');
+    setTiktokUsername('');
+  };
+
+  const closeTikTokSection = () => {
+    setActiveSection('none');
+    setTiktokUsername('');
   };
 
   return (
@@ -782,8 +823,70 @@ export default function DashboardPage() {
       {/* Main Content */}
       <div className={styles.mainContent}>
         {/* Center Preview */}
-        <div className={styles.centerPreview}>
-          <div className={`${styles.phoneMockup} ${selectedTemplate === 'template1' ? styles.template1 : ''}`}>
+        <div 
+          className={styles.centerPreview}
+          style={{
+            backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
+          {/* Page Background Video */}
+          {backgroundVideo && (
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className={styles.pageBackgroundVideo}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                zIndex: 0,
+              }}
+            >
+              <source src={backgroundVideo} type="video/mp4" />
+            </video>
+          )}
+
+          <div 
+            className={`${styles.phoneMockup} ${selectedTemplate === 'template1' ? styles.template1 : selectedTemplate === 'template2' ? styles.template2 : ''}`}
+            style={{
+              backgroundColor: cardBackgroundColor,
+              backgroundImage: cardBackgroundImage ? `url(${cardBackgroundImage})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              position: 'relative',
+            }}
+          >
+            {/* Card Background Video */}
+            {cardBackgroundVideo && (
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className={styles.cardBackgroundVideo}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  zIndex: 0,
+                  borderRadius: '40px',
+                }}
+              >
+                <source src={cardBackgroundVideo} type="video/mp4" />
+              </video>
+            )}
             {/* Profile Section */}
             <div className={styles.profileSection}>
               <div 
@@ -807,6 +910,7 @@ export default function DashboardPage() {
                 currentImage={profileImage}
                 className={styles.hiddenFileUpload}
                 hideButton={true}
+                showPreview={false}
                 ref={fileInputRef}
               />
 
@@ -915,75 +1019,758 @@ export default function DashboardPage() {
                 </DndContext>
               )}
             </div>
+
+            {/* Custom Text Section */}
+            {customText && (
+              <div className={styles.customTextSection}>
+                <p className={styles.customText}>{customText}</p>
+              </div>
+            )}
           </div>
 
           {/* Add/Edit Buttons */}
           <div className={styles.actionButtons}>
-            <button className={styles.addBtn} onClick={() => setShowAddMenu(!showAddMenu)}>
-              <i className="fas fa-plus"></i>
-            </button>
-            <button className={styles.editBtn}>
-              <i className="fas fa-pen"></i>
-            </button>
+            {/* Add Button Dropup */}
+            <div className={styles.actionButtonWrapper}>
+              {showAddMenu && (
+                <div className={styles.dropupMenu}>
+                  <button 
+                    className={styles.dropupItem}
+                    onClick={() => {
+                      setShowAddTextModal(true);
+                      setShowAddMenu(false);
+                    }}
+                  >
+                    <i className="fas fa-text"></i>
+                    <span>Add Text</span>
+                  </button>
+                  <button 
+                    className={styles.dropupItem}
+                    onClick={() => {
+                      openAddLinkSection();
+                      setShowAddMenu(false);
+                    }}
+                  >
+                    <i className="fas fa-link"></i>
+                    <span>Add Link</span>
+                  </button>
+                </div>
+              )}
+              <button 
+                className={styles.addBtn} 
+                onClick={() => {
+                  setShowAddMenu(!showAddMenu);
+                  setShowEditMenu(false);
+                }}
+              >
+                <i className="fas fa-plus"></i>
+              </button>
+            </div>
+
+            {/* Edit Button Dropup */}
+            <div className={styles.actionButtonWrapper}>
+              {showEditMenu && (
+                <div className={styles.dropupMenu}>
+                  <button className={styles.dropupItem}>
+                    <label htmlFor="backgroundImageUpload" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: '100%' }}>
+                      <i className="fas fa-image"></i>
+                      <span>Page Background Image</span>
+                    </label>
+                    <input
+                      id="backgroundImageUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            setIsUploadingBackground(true);
+                            
+                            // Upload file
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('type', 'image');
+                            
+                            const uploadResponse = await fetch('/api/upload/background', {
+                              method: 'POST',
+                              body: formData,
+                            });
+                            
+                            if (!uploadResponse.ok) {
+                              const errorData = await uploadResponse.json();
+                              showToast(errorData.error || 'Failed to upload image', 'error');
+                              return;
+                            }
+                            
+                            const { path } = await uploadResponse.json();
+                            setBackgroundImage(path);
+                            
+                            // Save path to database
+                            await fetch('/api/user/profile', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ backgroundImage: path }),
+                            });
+                            
+                            showToast('Background image updated! 🎨', 'success');
+                          } catch (error) {
+                            console.error('Error uploading image:', error);
+                            showToast('Failed to upload image', 'error');
+                          } finally {
+                            setIsUploadingBackground(false);
+                          }
+                        }
+                        setShowEditMenu(false);
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                  </button>
+                  <button className={styles.dropupItem}>
+                    <label htmlFor="backgroundVideoUpload" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: '100%' }}>
+                      <i className="fas fa-video"></i>
+                      <span>Page Background Video</span>
+                    </label>
+                    <input
+                      id="backgroundVideoUpload"
+                      type="file"
+                      accept="video/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 50 * 1024 * 1024) {
+                            showToast('Video must be less than 50MB', 'error');
+                            return;
+                          }
+                          
+                          try {
+                            setIsUploadingBackground(true);
+                            
+                            // Upload file
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('type', 'video');
+                            
+                            const uploadResponse = await fetch('/api/upload/background', {
+                              method: 'POST',
+                              body: formData,
+                            });
+                            
+                            if (!uploadResponse.ok) {
+                              const errorData = await uploadResponse.json();
+                              showToast(errorData.error || 'Failed to upload video', 'error');
+                              return;
+                            }
+                            
+                            const { path } = await uploadResponse.json();
+                            setBackgroundVideo(path);
+                            
+                            // Save path to database
+                            await fetch('/api/user/profile', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ backgroundVideo: path }),
+                            });
+                            
+                            showToast('Background video updated! 🎬', 'success');
+                          } catch (error) {
+                            console.error('Error uploading video:', error);
+                            showToast('Failed to upload video', 'error');
+                          } finally {
+                            setIsUploadingBackground(false);
+                          }
+                        }
+                        setShowEditMenu(false);
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                  </button>
+
+                  {/* Card Background Color */}
+                  <button className={styles.dropupItem}>
+                    <label htmlFor="cardBackgroundColorPicker" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: '100%' }}>
+                      <i className="fas fa-palette"></i>
+                      <span>Card Background Color</span>
+                    </label>
+                    <input
+                      id="cardBackgroundColorPicker"
+                      type="color"
+                      value={cardBackgroundColor}
+                      onChange={async (e) => {
+                        const color = e.target.value;
+                        setCardBackgroundColor(color);
+                        
+                        try {
+                          await fetch('/api/user/profile', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ cardBackgroundColor: color }),
+                          });
+                          showToast('Card background color updated! 🎨', 'success');
+                        } catch (error) {
+                          console.error('Error updating color:', error);
+                          showToast('Failed to update color', 'error');
+                        }
+                        setShowEditMenu(false);
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                  </button>
+
+                  {/* Card Background Image */}
+                  <button className={styles.dropupItem}>
+                    <label htmlFor="cardBackgroundImageUpload" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: '100%' }}>
+                      <i className="fas fa-image"></i>
+                      <span>Card Background Image</span>
+                    </label>
+                    <input
+                      id="cardBackgroundImageUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            setIsUploadingBackground(true);
+                            
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('type', 'image');
+                            
+                            const uploadResponse = await fetch('/api/upload/background', {
+                              method: 'POST',
+                              body: formData,
+                            });
+                            
+                            if (!uploadResponse.ok) {
+                              const errorData = await uploadResponse.json();
+                              showToast(errorData.error || 'Failed to upload image', 'error');
+                              return;
+                            }
+                            
+                            const { path } = await uploadResponse.json();
+                            setCardBackgroundImage(path);
+                            
+                            await fetch('/api/user/profile', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ cardBackgroundImage: path }),
+                            });
+                            
+                            showToast('Card background image updated! 🎨', 'success');
+                          } catch (error) {
+                            console.error('Error uploading image:', error);
+                            showToast('Failed to upload image', 'error');
+                          } finally {
+                            setIsUploadingBackground(false);
+                          }
+                        }
+                        setShowEditMenu(false);
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                  </button>
+
+                  {/* Card Background Video */}
+                  <button className={styles.dropupItem}>
+                    <label htmlFor="cardBackgroundVideoUpload" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: '100%' }}>
+                      <i className="fas fa-video"></i>
+                      <span>Card Background Video</span>
+                    </label>
+                    <input
+                      id="cardBackgroundVideoUpload"
+                      type="file"
+                      accept="video/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 50 * 1024 * 1024) {
+                            showToast('Video must be less than 50MB', 'error');
+                            return;
+                          }
+                          
+                          try {
+                            setIsUploadingBackground(true);
+                            
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('type', 'video');
+                            
+                            const uploadResponse = await fetch('/api/upload/background', {
+                              method: 'POST',
+                              body: formData,
+                            });
+                            
+                            if (!uploadResponse.ok) {
+                              const errorData = await uploadResponse.json();
+                              showToast(errorData.error || 'Failed to upload video', 'error');
+                              return;
+                            }
+                            
+                            const { path } = await uploadResponse.json();
+                            setCardBackgroundVideo(path);
+                            
+                            await fetch('/api/user/profile', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ cardBackgroundVideo: path }),
+                            });
+                            
+                            showToast('Card background video updated! 🎬', 'success');
+                          } catch (error) {
+                            console.error('Error uploading video:', error);
+                            showToast('Failed to upload video', 'error');
+                          } finally {
+                            setIsUploadingBackground(false);
+                          }
+                        }
+                        setShowEditMenu(false);
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                  </button>
+                </div>
+              )}
+              <button 
+                className={styles.editBtn}
+                onClick={() => {
+                  setShowEditMenu(!showEditMenu);
+                  setShowAddMenu(false);
+                }}
+              >
+                <i className="fas fa-pen"></i>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Right Sidebar - Add Menu */}
-        <aside className={styles.rightSidebar}>
-          <div className={styles.addSection}>
-            <h3 className={styles.addTitle}>add</h3>
-            
-            <div className={styles.addOptions}>
-              <button className={styles.addOption} onClick={openAddLinkModal}>
-                <div className={styles.optionIcon}>
-                  <i className="fas fa-link"></i>
-                </div>
-                <div className={styles.optionContent}>
-                  <h4 className={styles.optionTitle}>link</h4>
-                  <p className={styles.optionDescription}>add any link, any style</p>
-                </div>
-                <i className="fas fa-chevron-right"></i>
-              </button>
+          <aside className={styles.rightSidebar}>
+            <div className={styles.addSection}>
+             {activeSection === 'none' ? (
+               <>
+                 <h3 className={styles.addTitle}>add</h3>
+                 
+                 <div className={styles.addOptions}>
+                   <button className={styles.addOption} onClick={openAddLinkSection}>
+                     <div className={styles.optionIcon}>
+                       <i className="fas fa-link"></i>
+                     </div>
+                     <div className={styles.optionContent}>
+                       <h4 className={styles.optionTitle}>link</h4>
+                       <p className={styles.optionDescription}>add any link, any style</p>
+                     </div>
+                     <i className="fas fa-chevron-right"></i>
+                   </button>
 
-              <button className={styles.addOption} onClick={openSocialsModal}>
-                <div className={styles.optionIcon}>
-                  <i className="fas fa-hashtag"></i>
-                </div>
-                <div className={styles.optionContent}>
-                  <h4 className={styles.optionTitle}>socials</h4>
-                  <p className={styles.optionDescription}>connect your social platforms</p>
-                </div>
-                <i className="fas fa-chevron-right"></i>
-              </button>
+                   <button className={styles.addOption} onClick={openSocialsSection}>
+                     <div className={styles.optionIcon}>
+                       <i className="fas fa-hashtag"></i>
+                     </div>
+                     <div className={styles.optionContent}>
+                       <h4 className={styles.optionTitle}>socials</h4>
+                       <p className={styles.optionDescription}>connect your social platforms</p>
+                     </div>
+                     <i className="fas fa-chevron-right"></i>
+                   </button>
 
-              <button className={styles.addOption} onClick={openTemplatesModal}>
-                <div className={styles.optionIcon}>
-                  <i className="fas fa-palette"></i>
-                </div>
-                <div className={styles.optionContent}>
-                  <h4 className={styles.optionTitle}>design & templates</h4>
-                  <p className={styles.optionDescription}>customize your page style</p>
-                </div>
-                <i className="fas fa-chevron-right"></i>
-              </button>
+                   <button className={styles.addOption} onClick={openTemplatesSection}>
+                     <div className={styles.optionIcon}>
+                       <i className="fas fa-palette"></i>
+                     </div>
+                     <div className={styles.optionContent}>
+                       <h4 className={styles.optionTitle}>design & templates</h4>
+                       <p className={styles.optionDescription}>customize your page style</p>
+                     </div>
+                     <i className="fas fa-chevron-right"></i>
+                   </button>
 
-              <button className={styles.addOption} onClick={() => setShowTikTokModal(true)}>
-                <div className={styles.optionIcon}>
-                  <i className="fab fa-tiktok"></i>
-                </div>
-                <div className={styles.optionContent}>
-                  <h4 className={styles.optionTitle}>autofill from tiktok</h4>
-                  <p className={styles.optionDescription}>import your tiktok profile info</p>
-                </div>
-                <i className="fas fa-chevron-right"></i>
-              </button>
-            </div>
+                   <button className={styles.addOption} onClick={openTikTokSection}>
+                     <div className={styles.optionIcon}>
+                       <i className="fab fa-tiktok"></i>
+                     </div>
+                     <div className={styles.optionContent}>
+                       <h4 className={styles.optionTitle}>autofill from tiktok</h4>
+                       <p className={styles.optionDescription}>import your tiktok profile info</p>
+                     </div>
+                     <i className="fas fa-chevron-right"></i>
+                   </button>
+                 </div>
+               </>
+             ) : activeSection === 'addLink' ? (
+              <div className={styles.addLinkInlineSection}>
+                {addLinkStep === 'layout' ? (
+                  <>
+                    {/* Layout Selection Step */}
+                    <div className={styles.inlineHeader}>
+                      <button 
+                        className={styles.inlineBack}
+                        onClick={closeAddLinkSection}
+                      >
+                        <i className="fas fa-chevron-left"></i>
+                      </button>
+                      <h3 className={styles.inlineTitle}>add link</h3>
+                    </div>
+                    
+                    <div className={styles.addLinkBody}>
+                      <div className={styles.layoutSelectionHeader}>
+                        <h4 className={styles.layoutTitle}>select link layout</h4>
+                        <p className={styles.layoutSubtitle}>you can change this anytime</p>
+                      </div>
+
+                      <div className={styles.layoutOptions}>
+                        {/* Layout 1 - Simple Text */}
+                        <button 
+                          className={`${styles.layoutOption} ${selectedLayout === 'simple' ? styles.layoutOptionSelected : ''}`}
+                          onClick={() => handleLayoutSelect('simple')}
+                        >
+                          <div className={styles.layoutInfo}>
+                            <h4 className={styles.layoutOptionName}>Simple Link</h4>
+                            <p className={styles.layoutOptionDesc}>Clean text-only link with an icon</p>
+                          </div>
+                          <div className={styles.layoutPreview}>
+                            <div className={styles.simpleLayout}>
+                              <i className="fas fa-link"></i>
+                              <span>link title</span>
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Layout 2 - Image Right + Text Left */}
+                        <button 
+                          className={`${styles.layoutOption} ${selectedLayout === 'image-right' ? styles.layoutOptionSelected : ''}`}
+                          onClick={() => handleLayoutSelect('image-right')}
+                        >
+                          <div className={styles.layoutInfo}>
+                            <h4 className={styles.layoutOptionName}>Image Right</h4>
+                            <p className={styles.layoutOptionDesc}>Title on left, thumbnail on right</p>
+                          </div>
+                          <div className={styles.layoutPreview}>
+                            <div className={styles.imageRightLayout}>
+                              <span>link title</span>
+                              <div className={styles.layoutImagePlaceholder}>
+                                <i className="fas fa-image"></i>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Layout 3 - Image Top + Text Bottom */}
+                        <button 
+                          className={`${styles.layoutOption} ${selectedLayout === 'image-top' ? styles.layoutOptionSelected : ''}`}
+                          onClick={() => handleLayoutSelect('image-top')}
+                        >
+                          <div className={styles.layoutInfo}>
+                            <h4 className={styles.layoutOptionName}>Image Top</h4>
+                            <p className={styles.layoutOptionDesc}>Image above title in card layout</p>
+                          </div>
+                          <div className={styles.layoutPreview}>
+                            <div className={styles.imageTopLayout}>
+                              <div className={styles.layoutImagePlaceholder}>
+                                <i className="fas fa-image"></i>
+                              </div>
+                              <span>link title</span>
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Layout 4 - Large Image */}
+                        <button 
+                          className={`${styles.layoutOption} ${selectedLayout === 'image-large' ? styles.layoutOptionSelected : ''}`}
+                          onClick={() => handleLayoutSelect('image-large')}
+                        >
+                          <div className={styles.layoutInfo}>
+                            <h4 className={styles.layoutOptionName}>Large Banner</h4>
+                            <p className={styles.layoutOptionDesc}>Full-width image with title below</p>
+                          </div>
+                          <div className={styles.layoutPreview}>
+                            <div className={styles.imageLargeLayout}>
+                              <div className={styles.layoutImagePlaceholder}>
+                                <i className="fas fa-image"></i>
+                              </div>
+                              <span>link title</span>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                      
+                      <button 
+                        className={styles.continueBtn}
+                        onClick={() => setAddLinkStep('form')}
+                      >
+                        Continue <i className="fas fa-arrow-right"></i>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Form Step */}
+                    <div className={styles.inlineHeader}>
+                      <button 
+                        className={styles.inlineBack}
+                        onClick={backToLayoutSelection}
+                      >
+                        <i className="fas fa-chevron-left"></i>
+                      </button>
+                      <h3 className={styles.inlineTitle}>add link details</h3>
+                    </div>
+                    
+                    <div className={styles.addLinkBody}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Link Title <span className={styles.requiredField}>*</span></label>
+                        <input
+                          type="text"
+                          className={styles.formInput}
+                          placeholder="Enter link title"
+                          value={linkTitle}
+                          onChange={(e) => setLinkTitle(e.target.value)}
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Link URL <span className={styles.requiredField}>*</span></label>
+                        <input
+                          type="url"
+                          className={styles.formInput}
+                          placeholder="https://example.com"
+                          value={linkUrl}
+                          onChange={(e) => setLinkUrl(e.target.value)}
+                        />
+                      </div>
+
+                      {selectedLayout !== 'simple' && (
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Link Image</label>
+                          <FileUpload
+                            onUploadComplete={(fileUrl) => setLinkImage(fileUrl)}
+                            uploadType="link"
+                          />
+                        </div>
+                      )}
+
+                      <button 
+                        className={styles.addLinkBtn}
+                        onClick={handleAddLink}
+                        disabled={!linkTitle.trim() || !linkUrl.trim() || isSaving}
+                      >
+                        {isSaving ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin"></i> Adding...
+                          </>
+                        ) : (
+                          <>Add Link <i className="fas fa-plus"></i></>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+             ) : activeSection === 'socials' ? (
+               <div className={styles.addLinkInlineSection}>
+                 {socialsStep === 'platforms' ? (
+                   <>
+                     {/* Platform Selection Step */}
+                     <div className={styles.inlineHeader}>
+                       <button 
+                         className={styles.inlineBack}
+                         onClick={closeSocialsSection}
+                       >
+                         <i className="fas fa-chevron-left"></i>
+                       </button>
+                       <h3 className={styles.inlineTitle}>add social</h3>
+                     </div>
+                     
+                     <div className={styles.addLinkBody}>
+                       <div className={styles.layoutSelectionHeader}>
+                         <h4 className={styles.layoutTitle}>choose a platform</h4>
+                         <p className={styles.layoutSubtitle}>connect your social media</p>
+                       </div>
+
+                       <div className={styles.socialPlatformsGrid}>
+                         {socialPlatforms.map((platform) => (
+                           <button
+                             key={platform.name}
+                             className={styles.platformCard}
+                             onClick={() => selectPlatform(platform)}
+                           >
+                             <i className={`${platform.icon} ${styles.platformIcon}`}></i>
+                             <span className={styles.platformName}>{platform.name}</span>
+                           </button>
+                         ))}
+                       </div>
+                     </div>
+                   </>
+                 ) : (
+                   <>
+                     {/* URL Input Step */}
+                     <div className={styles.inlineHeader}>
+                       <button 
+                         className={styles.inlineBack}
+                         onClick={backToPlatformSelection}
+                       >
+                         <i className="fas fa-chevron-left"></i>
+                       </button>
+                       <h3 className={styles.inlineTitle}>add {selectedPlatform?.name}</h3>
+                     </div>
+                     
+                     <div className={styles.addLinkBody}>
+                       <div className={styles.formGroup}>
+                         <label className={styles.formLabel}>
+                           {selectedPlatform?.name} URL <span className={styles.requiredField}>*</span>
+                         </label>
+                         <input
+                           type="url"
+                           className={styles.formInput}
+                           placeholder={`https://${selectedPlatform?.name.toLowerCase()}.com/yourprofile`}
+                           value={socialUrl}
+                           onChange={(e) => setSocialUrl(e.target.value)}
+                         />
+                       </div>
+
+                       <button 
+                         className={styles.addLinkBtn}
+                         onClick={handleAddSocial}
+                         disabled={!socialUrl.trim() || isSaving}
+                       >
+                         {isSaving ? (
+                           <>
+                             <i className="fas fa-spinner fa-spin"></i> Adding...
+                           </>
+                         ) : (
+                           <>Add Social <i className="fas fa-plus"></i></>
+                         )}
+                       </button>
+                     </div>
+                   </>
+                 )}
+               </div>
+             ) : activeSection === 'templates' ? (
+               <div className={styles.addLinkInlineSection}>
+                 <div className={styles.inlineHeader}>
+                   <button 
+                     className={styles.inlineBack}
+                     onClick={closeTemplatesSection}
+                   >
+                     <i className="fas fa-chevron-left"></i>
+                   </button>
+                   <h3 className={styles.inlineTitle}>choose template</h3>
+                 </div>
+
+                 <div className={styles.addLinkBody}>
+                   <div className={styles.layoutSelectionHeader}>
+                     <h4 className={styles.layoutTitle}>select a design</h4>
+                     <p className={styles.layoutSubtitle}>customize your page style</p>
+                   </div>
+
+                   <div className={styles.templatesGrid}>
+                     {templates.map((template) => (
+                       <button
+                         key={template.id}
+                         className={`${styles.templateCard} ${selectedTemplate === template.id ? styles.templateCardActive : ''}`}
+                         onClick={() => handleTemplateSelect(template.id)}
+                         disabled={isSaving}
+                       >
+                         <div className={styles.templatePreview}>
+                           {template.id === 'default' ? (
+                             <div className={styles.templatePreviewDefault}>
+                               <div className={styles.previewCircle}></div>
+                               <div className={styles.previewLine}></div>
+                               <div className={styles.previewLine}></div>
+                               <div className={styles.previewButton}></div>
+                               <div className={styles.previewButton}></div>
+                             </div>
+                           ) : template.id === 'template1' ? (
+                             <div className={styles.templatePreviewBold}>
+                               <div className={styles.previewCircle}></div>
+                               <div className={styles.previewLine}></div>
+                               <div className={styles.previewLine}></div>
+                               <div className={styles.previewButtonBold}></div>
+                               <div className={styles.previewButtonBold}></div>
+                             </div>
+                           ) : template.id === 'template2' ? (
+                             <div className={styles.templatePreviewOcean}>
+                               <div className={styles.previewCircle}></div>
+                               <div className={styles.previewLine}></div>
+                               <div className={styles.previewLine}></div>
+                               <div className={styles.previewButtonOcean}></div>
+                               <div className={styles.previewButtonOcean}></div>
+                             </div>
+                           ) : null}
+                         </div>
+
+                         <div className={styles.templateInfo}>
+                           <h4 className={styles.templateName}>
+                             {template.name}
+                             {selectedTemplate === template.id && (
+                               <i className="fas fa-check-circle" style={{ color: '#667eea', marginLeft: '8px' }}></i>
+                             )}
+                           </h4>
+                           <p className={styles.templateDescription}>{template.description}</p>
+                         </div>
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+               </div>
+             ) : activeSection === 'tiktok' ? (
+               <div className={styles.addLinkInlineSection}>
+                 <div className={styles.inlineHeader}>
+                   <button 
+                     className={styles.inlineBack}
+                     onClick={closeTikTokSection}
+                   >
+                     <i className="fas fa-chevron-left"></i>
+                   </button>
+                   <h3 className={styles.inlineTitle}>autofill from tiktok</h3>
+                 </div>
+                 
+                 <div className={styles.addLinkBody}>
+                   <div className={styles.layoutSelectionHeader}>
+                     <h4 className={styles.layoutTitle}>import your profile</h4>
+                     <p className={styles.layoutSubtitle}>automatically fetch your TikTok info</p>
+                   </div>
+
+                   <div className={styles.formGroup}>
+                     <label className={styles.formLabel}>TikTok Username <span className={styles.requiredField}>*</span></label>
+                     <div className={styles.inputGroup}>
+                       <div className={styles.inputIcon}>
+                         <i className="fab fa-tiktok"></i>
+                       </div>
+                       <input
+                         type="text"
+                         className={styles.formInput}
+                         placeholder="@username or username"
+                         value={tiktokUsername}
+                         onChange={(e) => setTiktokUsername(e.target.value)}
+                         onKeyPress={(e) => e.key === 'Enter' && handleTikTokAutofill()}
+                         disabled={isLoading}
+                       />
+                     </div>
+                   </div>
+
+                   <button 
+                     className={styles.addLinkBtn}
+                     onClick={handleTikTokAutofill}
+                     disabled={isLoading || !tiktokUsername.trim()}
+                   >
+                     {isLoading ? (
+                       <>
+                         <i className="fas fa-spinner fa-spin"></i> Importing...
+                       </>
+                     ) : (
+                       <>
+                         <i className="fas fa-download"></i> Import Profile
+                       </>
+                     )}
+                   </button>
+                 </div>
+               </div>
+             ) : null}
           </div>
         </aside>
       </div>
 
-      {/* TikTok Autofill Modal */}
-      {showTikTokModal && (
+      {/* TikTok Autofill Modal - REMOVE THIS */}
+      {false && (
         <div className={styles.modalOverlay} onClick={() => setShowTikTokModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -1043,251 +1830,6 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Link Modal */}
-      {showAddLinkModal && (
-        <div className={styles.addLinkOverlay} onClick={closeAddLinkModal}>
-          <div className={styles.addLinkModal} onClick={(e) => e.stopPropagation()}>
-            {addLinkStep === 'layout' ? (
-              <>
-                {/* Layout Selection Step */}
-                <div className={styles.modalHeader}>
-                  <button 
-                    className={styles.modalBack}
-                    onClick={closeAddLinkModal}
-                  >
-                    <i className="fas fa-chevron-left"></i>
-                  </button>
-                  <h3 className={styles.modalTitle}>add link</h3>
-                  <div style={{ width: '32px' }}></div>
-                </div>
-                
-                <div className={styles.addLinkBody}>
-                  <div className={styles.layoutSelectionHeader}>
-                    <h4 className={styles.layoutTitle}>select link layout</h4>
-                    <p className={styles.layoutSubtitle}>you can change this anytime</p>
-                  </div>
-
-                  <div className={styles.layoutOptions}>
-                    {/* Layout 1 - Simple Text */}
-                    <button 
-                      className={styles.layoutOption}
-                      onClick={() => handleLayoutSelect('simple')}
-                    >
-                      <div className={styles.layoutPreview}>
-                        <div className={styles.simpleLayout}>
-                          <span>link title ...</span>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Layout 2 - Image Left + Text Right */}
-                    <button 
-                      className={styles.layoutOption}
-                      onClick={() => handleLayoutSelect('image-left')}
-                    >
-                      <div className={styles.layoutPreview}>
-                        <div className={styles.imageLeftLayout}>
-                          <div className={styles.layoutImagePlaceholder}>
-                            <span>image</span>
-                          </div>
-                          <span>link title ...</span>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Layout 3 - Image Right + Text Left */}
-                    <button 
-                      className={styles.layoutOption}
-                      onClick={() => handleLayoutSelect('image-right')}
-                    >
-                      <div className={styles.layoutPreview}>
-                        <div className={styles.imageRightLayout}>
-                          <div className={styles.layoutImagePlaceholder}>
-                            <span>image</span>
-                          </div>
-                          <span>link title ...</span>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Layout 4 - Image Top + Text Bottom (Grid Left) */}
-                    <button 
-                      className={styles.layoutOption}
-                      onClick={() => handleLayoutSelect('image-top-left')}
-                    >
-                      <div className={styles.layoutPreview}>
-                        <div className={styles.imageTopLayout}>
-                          <div className={styles.layoutImagePlaceholder}>
-                            <span>image</span>
-                          </div>
-                          <span>link title ...</span>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Layout 5 - Image Top + Text Bottom (Grid Right) */}
-                    <button 
-                      className={styles.layoutOption}
-                      onClick={() => handleLayoutSelect('image-top-right')}
-                    >
-                      <div className={styles.layoutPreview}>
-                        <div className={styles.imageTopLayout}>
-                          <div className={styles.layoutImagePlaceholder}>
-                            <span>image</span>
-                          </div>
-                          <span>link title ...</span>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Layout 6 - Large Image */}
-                    <button 
-                      className={styles.layoutOption}
-                      onClick={() => handleLayoutSelect('image-large')}
-                    >
-                      <div className={styles.layoutPreview}>
-                        <div className={styles.imageLargeLayout}>
-                          <div className={styles.layoutImagePlaceholder}>
-                            <span>image</span>
-                          </div>
-                          <span>link title ...</span>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Form Step */}
-                <div className={styles.modalHeader}>
-                  <button 
-                    className={styles.modalBack}
-                    onClick={backToLayoutSelection}
-                  >
-                    <i className="fas fa-chevron-left"></i>
-                  </button>
-                  <h3 className={styles.modalTitle}>add link</h3>
-                  <div style={{ width: '32px' }}></div>
-                </div>
-                
-                <div className={styles.addLinkBody}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Link Title</label>
-                    <input
-                      type="text"
-                      className={styles.formInput}
-                      placeholder="Enter link title"
-                      value={linkTitle}
-                      onChange={(e) => setLinkTitle(e.target.value)}
-                    />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Link URL</label>
-                    <input
-                      type="url"
-                      className={styles.formInput}
-                      placeholder="https://example.com"
-                      value={linkUrl}
-                      onChange={(e) => setLinkUrl(e.target.value)}
-                    />
-                  </div>
-
-                  {selectedLayout !== 'simple' && (
-                    <div className={styles.formGroup}>
-                      <label className={styles.formLabel}>Link Image (Optional)</label>
-                      <div 
-                        className={`${styles.dropZone} ${isDragging ? styles.dragging : ''}`}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsDragging(true);
-                        }}
-                        onDragLeave={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsDragging(false);
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsDragging(false);
-                          const file = e.dataTransfer.files[0];
-                          if (file && file.type.startsWith('image/')) {
-                            // Create FormData and upload directly
-                            const formData = new FormData();
-                            formData.append('file', file);
-                            
-                            // Show loading state
-                            setIsLoading(true);
-                            
-                            // Upload the file
-                            fetch('/api/upload?type=link', {
-                              method: 'POST',
-                              body: formData,
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                              if (data.fileUrl) {
-                                handleLinkImageUpload(data.fileUrl);
-                              }
-                            })
-                            .catch(error => {
-                              console.error('Error uploading image:', error);
-                            })
-                            .finally(() => {
-                              setIsLoading(false);
-                            });
-                          }
-                        }}
-                        onClick={() => {
-                          const input = document.getElementById('linkImageInput') as HTMLInputElement;
-                          input?.click();
-                        }}
-                      >
-                        {linkImage ? (
-                          <div className={styles.imagePreview}>
-                            <img src={linkImage} alt="Link preview" />
-                          </div>
-                        ) : (
-                          <div className={styles.uploadPrompt}>
-                            <i className="fas fa-cloud-upload-alt"></i>
-                            <p>Drag & drop an image here or click to upload</p>
-                          </div>
-                        )}
-                      </div>
-                      <FileUpload
-                        onUploadComplete={handleLinkImageUpload}
-                        uploadType="link"
-                        currentImage={linkImage}
-                        hideButton={true}
-                      />
-                    </div>
-                  )}
-
-                  <div className={styles.formActions}>
-                    <button 
-                      className={styles.cancelFormBtn}
-                      onClick={closeAddLinkModal}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      className={styles.addLinkBtn}
-                      onClick={handleAddLink}
-                      disabled={!linkTitle.trim() || !linkUrl.trim()}
-                    >
-                      Add Link
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         </div>
       )}
@@ -1395,140 +1937,86 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Socials Modal */}
-      {showSocialsModal && (
-        <div className={styles.addLinkOverlay} onClick={closeSocialsModal}>
-          <div className={styles.addLinkModal} onClick={(e) => e.stopPropagation()}>
+      {/* Old modals removed - now using inline sections */}
+
+      {/* Add Text Modal */}
+      {showAddTextModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowAddTextModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              {socialsStep === 'input' && (
-                <button className={styles.modalBack} onClick={backToPlatformSelection}>
-                  <i className="fas fa-arrow-left"></i>
-                </button>
-              )}
-              <h3 className={styles.modalTitle}>
-                {socialsStep === 'platforms' ? 'Add Social Media' : `Add ${selectedPlatform?.name}`}
-              </h3>
-              <button className={styles.modalClose} onClick={closeSocialsModal}>
+              <h2 className={styles.modalTitle}>
+                <i className="fas fa-text"></i> Add Text to Bio Page
+              </h2>
+              <button 
+                className={styles.modalClose}
+                onClick={() => setShowAddTextModal(false)}
+              >
                 <i className="fas fa-times"></i>
               </button>
             </div>
-
-            <div className={styles.addLinkBody}>
-              {socialsStep === 'platforms' ? (
-                <>
-                  <div className={styles.layoutSelectionHeader}>
-                    <p className={styles.layoutSubtitle}>
-                      Choose a platform to connect
-                    </p>
-                  </div>
-
-                  <div className={styles.socialPlatformsGrid}>
-                    {socialPlatforms.map((platform) => (
-                      <button
-                        key={platform.name}
-                        className={styles.socialPlatformBtn}
-                        onClick={() => selectPlatform(platform)}
-                      >
-                        <i className={platform.icon}></i>
-                        <span>{platform.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>
-                      {selectedPlatform?.name} URL
-                    </label>
-                    <input
-                      type="url"
-                      className={styles.formInput}
-                      placeholder={`https://${selectedPlatform?.name.toLowerCase()}.com/yourprofile`}
-                      value={socialUrl}
-                      onChange={(e) => setSocialUrl(e.target.value)}
-                      autoFocus
-                    />
-                  </div>
-
-                  <div className={styles.formActions}>
-                    <button 
-                      className={styles.cancelFormBtn}
-                      onClick={closeSocialsModal}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      className={styles.addLinkBtn}
-                      onClick={handleAddSocial}
-                      disabled={!socialUrl.trim() || isSaving}
-                    >
-                      {isSaving ? 'Adding...' : 'Add Social'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Templates Modal */}
-      {showTemplatesModal && (
-        <div className={styles.modalOverlay} onClick={closeTemplatesModal}>
-          <div className={styles.templatesModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Choose a Template</h3>
-              <button className={styles.modalClose} onClick={closeTemplatesModal}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-
-            <div className={styles.templatesBody}>
-              <p className={styles.modalDescription}>
-                Select a design template to customize the look of your bio link page
-              </p>
-
-              <div className={styles.templatesGrid}>
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    className={`${styles.templateCard} ${selectedTemplate === template.id ? styles.templateCardActive : ''}`}
-                    onClick={() => handleTemplateSelect(template.id)}
-                    disabled={isSaving}
-                  >
-                    <div className={styles.templatePreview}>
-                      {template.id === 'default' ? (
-                        <div className={styles.templatePreviewDefault}>
-                          <div className={styles.previewCircle}></div>
-                          <div className={styles.previewLine}></div>
-                          <div className={styles.previewLine}></div>
-                          <div className={styles.previewButton}></div>
-                          <div className={styles.previewButton}></div>
-                        </div>
-                      ) : (
-                        <div className={styles.templatePreviewBold}>
-                          <div className={styles.previewCircle}></div>
-                          <div className={styles.previewLine}></div>
-                          <div className={styles.previewLine}></div>
-                          <div className={styles.previewButtonBold}></div>
-                          <div className={styles.previewButtonBold}></div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={styles.templateInfo}>
-                      <h4 className={styles.templateName}>
-                        {template.name}
-                        {selectedTemplate === template.id && (
-                          <i className="fas fa-check-circle" style={{ color: '#667eea', marginLeft: '8px' }}></i>
-                        )}
-                      </h4>
-                      <p className={styles.templateDescription}>{template.description}</p>
-                    </div>
-                  </button>
-                ))}
+            
+            <div className={styles.modalBody}>
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
+                  <i className="fas fa-align-left"></i> Text Content
+                </label>
+                <textarea
+                  className={styles.textarea}
+                  placeholder="Enter your text content..."
+                  value={addTextContent}
+                  onChange={(e) => setAddTextContent(e.target.value)}
+                  rows={6}
+                />
+                <p className={styles.helperText}>
+                  This text will appear as a separate block on your bio page
+                </p>
               </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.secondaryBtn}
+                onClick={() => {
+                  setShowAddTextModal(false);
+                  setAddTextContent('');
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.primaryBtn}
+                onClick={async () => {
+                  if (!addTextContent.trim()) {
+                    showToast('Please enter some text', 'error');
+                    return;
+                  }
+                  
+                  try {
+                    const response = await fetch('/api/user/profile', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        customText: addTextContent 
+                      }),
+                    });
+
+                    if (response.ok) {
+                      setCustomText(addTextContent);
+                      showToast('Text added successfully! ✨', 'success');
+                      setShowAddTextModal(false);
+                      setAddTextContent('');
+                    } else {
+                      showToast('Failed to add text', 'error');
+                    }
+                  } catch (error) {
+                    console.error('Error adding text:', error);
+                    showToast('Failed to add text', 'error');
+                  }
+                }}
+                disabled={!addTextContent.trim()}
+              >
+                <i className="fas fa-plus"></i> Add Text
+              </button>
             </div>
           </div>
         </div>
