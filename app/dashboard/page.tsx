@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import FileUpload from '@/components/FileUpload';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -493,38 +494,20 @@ export default function DashboardPage() {
     fileInputRef.current?.click();
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        showToast('Image size should be less than 5MB', 'error');
-        return;
-      }
-
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        showToast('Please upload an image file', 'error');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const imageData = reader.result as string;
-        setProfileImage(imageData);
-        
-        // Save to database
-        try {
-          await fetch('/api/user/profile', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profileImage: imageData }),
-          });
-        } catch (error) {
-          console.error('Error saving image:', error);
-        }
-      };
-      reader.readAsDataURL(file);
+  const handleProfileImageUpload = (fileUrl: string) => {
+    setProfileImage(fileUrl);
+    
+    // Save to database
+    try {
+      fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileImage: fileUrl }),
+      });
+      showToast('Profile image updated successfully', 'success');
+    } catch (error) {
+      console.error('Error saving image:', error);
+      showToast('Failed to update profile image', 'error');
     }
   };
 
@@ -552,50 +535,11 @@ export default function DashboardPage() {
     setAddLinkStep('form');
   };
 
-  const handleLinkImageUpload = (file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image size should be less than 5MB', 'error');
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      showToast('Please upload an image file', 'error');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setLinkImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  const handleLinkImageUpload = (fileUrl: string) => {
+    setLinkImage(fileUrl);
   };
 
-  const handleLinkImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleLinkImageUpload(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleLinkImageUpload(file);
-    }
-  };
+  // These handlers are no longer needed as we're using the FileUpload component
 
   const handleAddLink = async () => {
     if (!linkTitle.trim() || !linkUrl.trim()) {
@@ -857,12 +801,13 @@ export default function DashboardPage() {
                 </div>
               </div>
               
-              <input
+              <FileUpload
+                onUploadComplete={handleProfileImageUpload}
+                uploadType="profile"
+                currentImage={profileImage}
+                className={styles.hiddenFileUpload}
+                hideButton={true}
                 ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: 'none' }}
               />
 
               <div className={styles.nameWrapper}>
@@ -1257,41 +1202,70 @@ export default function DashboardPage() {
                     <div className={styles.formGroup}>
                       <label className={styles.formLabel}>Link Image (Optional)</label>
                       <div 
-                        className={`${styles.imageDropZone} ${isDragging ? styles.dragging : ''} ${linkImage ? styles.hasImage : ''}`}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onClick={() => linkImageInputRef.current?.click()}
+                        className={`${styles.dropZone} ${isDragging ? styles.dragging : ''}`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(true);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(false);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(false);
+                          const file = e.dataTransfer.files[0];
+                          if (file && file.type.startsWith('image/')) {
+                            // Create FormData and upload directly
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            
+                            // Show loading state
+                            setIsLoading(true);
+                            
+                            // Upload the file
+                            fetch('/api/upload?type=link', {
+                              method: 'POST',
+                              body: formData,
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                              if (data.fileUrl) {
+                                handleLinkImageUpload(data.fileUrl);
+                              }
+                            })
+                            .catch(error => {
+                              console.error('Error uploading image:', error);
+                            })
+                            .finally(() => {
+                              setIsLoading(false);
+                            });
+                          }
+                        }}
+                        onClick={() => {
+                          const input = document.getElementById('linkImageInput') as HTMLInputElement;
+                          input?.click();
+                        }}
                       >
                         {linkImage ? (
-                          <div className={styles.uploadedImage}>
+                          <div className={styles.imagePreview}>
                             <img src={linkImage} alt="Link preview" />
-                            <button 
-                              className={styles.removeImageBtn}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setLinkImage('');
-                              }}
-                            >
-                              <i className="fas fa-times"></i>
-                            </button>
                           </div>
                         ) : (
-                          <>
+                          <div className={styles.uploadPrompt}>
                             <i className="fas fa-cloud-upload-alt"></i>
-                            <p className={styles.dropZoneText}>
-                              Drag and drop or <span>click to upload</span>
-                            </p>
-                            <p className={styles.dropZoneHint}>PNG, JPG up to 5MB</p>
-                          </>
+                            <p>Drag & drop an image here or click to upload</p>
+                          </div>
                         )}
                       </div>
-                      <input
-                        ref={linkImageInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLinkImageInputChange}
-                        style={{ display: 'none' }}
+                      <FileUpload
+                        onUploadComplete={handleLinkImageUpload}
+                        uploadType="link"
+                        currentImage={linkImage}
+                        hideButton={true}
                       />
                     </div>
                   )}

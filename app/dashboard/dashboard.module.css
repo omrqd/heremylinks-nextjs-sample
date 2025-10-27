@@ -1625,7 +1625,7 @@
 }
 
 /* Image Drop Zone */
-.imageDropZone {
+.dropZone {
     border: 2px dashed #d1d5db;
     border-radius: 12px;
     padding: 40px 20px;
@@ -1633,78 +1633,52 @@
     cursor: pointer;
     transition: all 0.2s;
     background: #f9fafb;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.imageDropZone:hover {
+.dropZone:hover {
     border-color: #667eea;
     background: #f0f4ff;
 }
 
-.imageDropZone.dragging {
+.dropZone.dragging {
     border-color: #667eea;
     background: #e0e9ff;
 }
 
-.imageDropZone i {
+.uploadPrompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.uploadPrompt i {
     font-size: 48px;
     color: #9ca3af;
-    margin-bottom: 16px;
 }
 
-.dropZoneText {
+.uploadPrompt p {
     font-size: 15px;
     color: #6b7280;
-    margin-bottom: 8px;
+    margin: 0;
 }
 
-.dropZoneText span {
-    color: #667eea;
-    font-weight: 600;
-}
-
-.dropZoneHint {
-    font-size: 13px;
-    color: #9ca3af;
-}
-
-.imageDropZone.hasImage {
-    padding: 0;
-    border: none;
-}
-
-.uploadedImage {
-    position: relative;
-    border-radius: 12px;
+.imagePreview {
+    width: 100%;
+    height: 200px;
+    border-radius: 8px;
     overflow: hidden;
 }
 
-.uploadedImage img {
+.imagePreview img {
     width: 100%;
-    height: 200px;
+    height: 100%;
     object-fit: cover;
     display: block;
-}
-
-.removeImageBtn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 32px;
-    height: 32px;
-    background: rgba(0, 0, 0, 0.7);
-    border: none;
-    border-radius: 50%;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.removeImageBtn:hover {
-    background: rgba(0, 0, 0, 0.9);
-    transform: scale(1.1);
 }
 
 /* Form Actions */
