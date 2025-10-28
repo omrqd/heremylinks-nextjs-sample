@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import styles from './public-bio.module.css';
 
@@ -18,6 +18,9 @@ interface User {
   cardBackgroundImage: string;
   cardBackgroundVideo: string;
   customText: string;
+  usernameColor: string;
+  bioColor: string;
+  customTextColor: string;
 }
 
 interface BioLink {
@@ -27,6 +30,9 @@ interface BioLink {
   icon?: string | null;
   image?: string | null;
   layout?: string | null;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+  isTransparent?: boolean;
 }
 
 interface SocialLink {
@@ -43,6 +49,46 @@ interface PublicBioPageProps {
 }
 
 export default function PublicBioPage({ user, links, socials }: PublicBioPageProps) {
+  // Video refs for Safari compatibility
+  const pageVideoRef = useRef<HTMLVideoElement>(null);
+  const cardVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Safari video compatibility - ensure videos loop infinitely
+  useEffect(() => {
+    const handleVideoLoop = (videoElement: HTMLVideoElement | null) => {
+      if (!videoElement) return;
+
+      const playVideo = () => {
+        videoElement.play().catch(err => {
+          console.log('Video autoplay prevented:', err);
+        });
+      };
+
+      const handleEnded = () => {
+        videoElement.currentTime = 0;
+        playVideo();
+      };
+
+      // Force play on mount
+      playVideo();
+
+      // Add ended event listener to restart video (Safari fallback)
+      videoElement.addEventListener('ended', handleEnded);
+
+      return () => {
+        videoElement.removeEventListener('ended', handleEnded);
+      };
+    };
+
+    const cleanupPage = handleVideoLoop(pageVideoRef.current);
+    const cleanupCard = handleVideoLoop(cardVideoRef.current);
+
+    return () => {
+      cleanupPage?.();
+      cleanupCard?.();
+    };
+  }, [user.backgroundVideo, user.cardBackgroundVideo]);
+
   const handleLinkClick = async (linkId: string, url: string) => {
     // Track link click (optional analytics)
     try {
@@ -74,10 +120,13 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
       {/* Page Background Video */}
       {user.backgroundVideo && (
         <video
+          ref={pageVideoRef}
           autoPlay
           loop
           muted
           playsInline
+          webkit-playsinline="true"
+          preload="auto"
           className={styles.backgroundVideo}
           style={{
             position: 'fixed',
@@ -90,6 +139,7 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
           }}
         >
           <source src={user.backgroundVideo} type="video/mp4" />
+          Your browser does not support the video tag.
         </video>
       )}
 
@@ -106,10 +156,13 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
         {/* Card Background Video */}
         {user.cardBackgroundVideo && (
           <video
+            ref={cardVideoRef}
             autoPlay
             loop
             muted
             playsInline
+            webkit-playsinline="true"
+            preload="auto"
             className={styles.cardBackgroundVideo}
             style={{
               position: 'absolute',
@@ -123,6 +176,7 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
             }}
           >
             <source src={user.cardBackgroundVideo} type="video/mp4" />
+            Your browser does not support the video tag.
           </video>
         )}
         {/* Profile Section */}
@@ -137,8 +191,8 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
             )}
           </div>
 
-          <h1 className={styles.profileName}>{user.name}</h1>
-          {user.bio && <p className={styles.profileBio}>{user.bio}</p>}
+          <h1 className={styles.profileName} style={{ color: user.usernameColor }}>{user.name}</h1>
+          {user.bio && <p className={styles.profileBio} style={{ color: user.bioColor }}>{user.bio}</p>}
         </div>
 
         {/* Social Icons */}
@@ -173,12 +227,18 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
                 ? styles[`layout${link.layout.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}`]
                 : styles.layoutSimple;
 
+              const linkStyle = {
+                backgroundColor: link.isTransparent ? 'transparent' : (link.backgroundColor || '#ffffff'),
+                borderColor: link.isTransparent ? 'rgba(255, 255, 255, 0.3)' : user.themeColor,
+                border: link.isTransparent ? '2px solid rgba(255, 255, 255, 0.3)' : `2px solid ${user.themeColor}`,
+              };
+
               return (
                 <button
                   key={link.id}
                   className={`${styles.bioLink} ${layoutClass}`}
                   onClick={() => handleLinkClick(link.id, link.url)}
-                  style={{ borderColor: user.themeColor }}
+                  style={linkStyle}
                 >
                   {/* Image Left Layout */}
                   {link.image && link.layout === 'image-left' && (
@@ -196,9 +256,9 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
 
                   <div className={styles.linkContent}>
                     {link.icon && !link.image && (
-                      <i className={`${link.icon} ${styles.linkIcon}`} style={{ color: user.themeColor }}></i>
+                      <i className={`${link.icon} ${styles.linkIcon}`} style={{ color: link.textColor || user.themeColor }}></i>
                     )}
-                    <span className={styles.linkTitle}>{link.title}</span>
+                    <span className={styles.linkTitle} style={{ color: link.textColor || '#1a1a1a' }}>{link.title}</span>
                   </div>
 
                   {/* Image Right Layout */}
@@ -218,7 +278,7 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
         {/* Custom Text Section */}
         {user.customText && (
           <div className={styles.customTextSection}>
-            <p className={styles.customText}>{user.customText}</p>
+            <p className={styles.customText} style={{ color: user.customTextColor }}>{user.customText}</p>
           </div>
         )}
 

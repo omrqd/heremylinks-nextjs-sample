@@ -434,16 +434,16 @@
 
 /* ==================== TEMPLATE 1 STYLES ==================== */
 .bioCard.template1 {
-    background: #ffffff;
+    /* Background is set inline via style prop */
 }
 
 .bioCard.template1 .profileName {
-    color: #000000 !important;
     font-weight: 700;
+    /* Color is set inline via style prop */
 }
 
 .bioCard.template1 .profileBio {
-    color: #4b5563 !important;
+    /* Color is set inline via style prop */
 }
 
 .bioCard.template1 .socialIcon {
@@ -457,28 +457,28 @@
 }
 
 .bioCard.template1 .bioLink {
-    background: #ffffff !important;
-    border: 3px solid #000000 !important;
-    border-radius: 50px !important;
+    border: 3px solid #000000;
+    border-radius: 50px;
+    /* Background is set inline via style prop */
 }
 
 .bioCard.template1 .bioLink:hover {
-    background: #f9fafb !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    /* Background is set inline via style prop */
 }
 
 .bioCard.template1 .linkTitle {
-    color: #000000 !important;
     font-weight: 600;
+    /* Color is set inline via style prop */
 }
 
 .bioCard.template1 .linkIcon {
-    color: #000000 !important;
+    /* Color is set inline via style prop */
 }
 
 .bioCard.template1 .fa-arrow-right {
-    color: #000000 !important;
+    /* Color is set inline via style prop */
 }
 
 .bioCard.template1 .linkImageLeft,
@@ -492,13 +492,13 @@
 
 /* ==================== TEMPLATE 2 STYLES (Ocean Gradient) ==================== */
 .publicBioContainer:has(.bioCard.template2) {
-    background: #2D3E7E !important;
+    /* Background is set inline via style prop */
 }
 
 .bioCard.template2 {
-    background: #5885B3;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     max-width: 520px;
+    /* Background is set inline via style prop */
     border-radius: 32px;
     overflow: hidden;
     margin: 40px auto;
@@ -521,17 +521,16 @@
 }
 
 .bioCard.template2 .profileName {
-    color: #ffffff;
     font-weight: 600;
     font-size: 26px;
     margin-top: 24px;
+    /* Color is set inline via style prop */
 }
 
 .bioCard.template2 .profileBio {
-    color: #ffffff;
     font-size: 16px;
     margin-top: 12px;
-    opacity: 0.95;
+    /* Color is set inline via style prop */
 }
 
 /* Social Icons */
@@ -561,31 +560,31 @@
 
 /* Bio Links */
 .bioCard.template2 .bioLink {
-    background: transparent;
     border: 2.5px solid rgba(255, 255, 255, 0.85);
     border-radius: 50px;
     padding: 16px 28px;
     box-shadow: none;
     transition: all 0.3s ease;
+    /* Background is set inline via style prop */
 }
 
 .bioCard.template2 .bioLink:hover {
-    background: rgba(255, 255, 255, 0.12);
     border-color: #ffffff;
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    /* Background is set inline via style prop */
 }
 
 .bioCard.template2 .linkTitle {
-    color: #ffffff;
     font-weight: 500;
     font-size: 16px;
+    /* Color is set inline via style prop */
 }
 
 .bioCard.template2 .linkIcon {
     background: transparent;
-    color: #ffffff;
     border: 2px solid rgba(255, 255, 255, 0.7);
+    /* Color is set inline via style prop */
 }
 
 /* Link Images in Template2 */
@@ -704,8 +703,8 @@
 }
 
 .bioCard.template1 .customText {
-    color: #000000;
     font-weight: 500;
+    /* Color is set inline via style prop */
 }
 
 .bioCard.template2 .customTextSection {
@@ -714,8 +713,8 @@
 }
 
 .bioCard.template2 .customText {
-    color: rgba(255, 255, 255, 0.95);
     font-size: 14px;
+    /* Color is set inline via style prop */
 }
 
 @media (max-width: 768px) {

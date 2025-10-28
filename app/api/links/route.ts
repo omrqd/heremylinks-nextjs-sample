@@ -11,6 +11,9 @@ interface BioLink extends RowDataPacket {
   icon: string | null;
   image: string | null;
   layout: string | null;
+  background_color: string | null;
+  text_color: string | null;
+  is_transparent: boolean;
   order: number;
   is_visible: boolean;
 }
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch links
     const [links] = await db.query<BioLink[]>(
-      `SELECT id, title, url, icon, image, layout, \`order\`, is_visible 
+      `SELECT id, title, url, icon, image, layout, background_color, text_color, is_transparent, \`order\`, is_visible 
        FROM bio_links 
        WHERE user_id = ? AND is_visible = TRUE 
        ORDER BY \`order\` ASC`,
@@ -56,6 +59,9 @@ export async function GET(request: NextRequest) {
         icon: link.icon,
         image: link.image,
         layout: link.layout,
+        backgroundColor: link.background_color,
+        textColor: link.text_color,
+        isTransparent: link.is_transparent,
         order: link.order,
       })),
     });
@@ -176,6 +182,75 @@ export async function DELETE(request: NextRequest) {
     console.error('Link deletion error:', error);
     return NextResponse.json(
       { error: 'Failed to delete link' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - Update a bio link
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, backgroundColor, textColor, isTransparent } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Link ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get user ID from email
+    const [userRows] = await db.query<User[]>(
+      'SELECT id FROM users WHERE email = ? LIMIT 1',
+      [session.user.email]
+    );
+
+    const user = userRows[0];
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Build update query dynamically
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (backgroundColor !== undefined) {
+      updates.push('background_color = ?');
+      values.push(backgroundColor);
+    }
+    if (textColor !== undefined) {
+      updates.push('text_color = ?');
+      values.push(textColor);
+    }
+    if (isTransparent !== undefined) {
+      updates.push('is_transparent = ?');
+      values.push(isTransparent);
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ success: true });
+    }
+
+    values.push(id, user.id);
+
+    // Update link (ensure it belongs to the user)
+    await db.query(
+      `UPDATE bio_links SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`,
+      values
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Link update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update link' },
       { status: 500 }
     );
   }

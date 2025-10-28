@@ -3423,3 +3423,200 @@
         justify-content: center;
     }
 }
+
+/* ==================== TEXT COLOR CUSTOMIZATION ==================== */
+.textEditGroup {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.textColorControls {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 6px;
+    border-radius: 12px;
+    z-index: 100;
+    animation: fadeInScale 0.2s ease;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+}
+
+.colorPicker {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.colorPicker:hover {
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ==================== CUSTOM TEXT CONTROLS ==================== */
+.customTextWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    padding: 12px 16px;
+}
+
+.customTextControls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 6px;
+    border-radius: 12px;
+}
+
+.removeTextBtn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(239, 68, 68, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    position: relative;
+}
+
+.removeTextBtn:hover {
+    background: rgba(220, 38, 38, 0.9);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.removeTextBtn:hover::after {
+    content: 'Remove';
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+/* ==================== LINK COLOR CONTROLS ==================== */
+.linkInner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.linkColorControls {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 6px;
+    border-radius: 12px;
+    z-index: 50;
+    animation: fadeInScale 0.2s ease;
+}
+
+.colorControlLabel {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: white;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.colorControlLabel:hover {
+    transform: scale(1.05);
+}
+
+.colorControlLabel i {
+    font-size: 14px;
+}
+
+.colorControlLabel input {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.transparentBtn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    position: relative;
+}
+
+.transparentBtn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.transparentBtn:hover::after {
+    content: 'Transparent';
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+}
+

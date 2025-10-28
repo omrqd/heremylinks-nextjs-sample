@@ -34,6 +34,9 @@ interface BioLink {
   icon?: string;
   image?: string;
   layout?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  isTransparent?: boolean;
 }
 
 interface SocialLink {
@@ -44,7 +47,7 @@ interface SocialLink {
 }
 
 // Sortable Link Item Component
-function SortableLinkItem({ link, onDelete }: { link: BioLink; onDelete: (id: string) => void }) {
+function SortableLinkItem({ link, onDelete, onUpdate }: { link: BioLink; onDelete: (id: string) => void; onUpdate: (id: string, updates: Partial<BioLink>) => void }) {
   const {
     attributes,
     listeners,
@@ -53,6 +56,8 @@ function SortableLinkItem({ link, onDelete }: { link: BioLink; onDelete: (id: st
     transition,
     isDragging,
   } = useSortable({ id: link.id });
+
+  const [showColorControls, setShowColorControls] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -64,12 +69,20 @@ function SortableLinkItem({ link, onDelete }: { link: BioLink; onDelete: (id: st
     ? styles[`preview${link.layout.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}`] 
     : styles.previewSimple;
 
+  const linkStyle = {
+    backgroundColor: link.isTransparent ? 'transparent' : (link.backgroundColor || '#ffffff'),
+    border: link.isTransparent ? '2px solid rgba(255, 255, 255, 0.3)' : undefined,
+  };
+
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
       className={`${styles.bioLinkItem} ${layoutClass} ${isDragging ? styles.dragging : ''}`}
+      onMouseEnter={() => setShowColorControls(true)}
+      onMouseLeave={() => setShowColorControls(false)}
     >
+      <div className={styles.linkInner} style={linkStyle}>
       {link.image && link.layout?.includes('image-left') && (
         <div className={styles.previewLinkImage}>
           <img src={link.image} alt={link.title} />
@@ -82,18 +95,52 @@ function SortableLinkItem({ link, onDelete }: { link: BioLink; onDelete: (id: st
         </div>
       )}
       
-      <div className={styles.linkContent}>
-        {link.icon && !link.image && (
-          <div className={styles.linkIcon}>
-            <i className={link.icon}></i>
+        <div className={styles.linkContent}>
+          {link.icon && !link.image && (
+            <div className={styles.linkIcon}>
+              <i className={link.icon}></i>
+            </div>
+          )}
+          <span className={styles.linkTitle} style={{ color: link.textColor || '#1a1a1a' }}>{link.title}</span>
+        </div>
+        
+        {link.image && link.layout?.includes('image-right') && (
+          <div className={styles.previewLinkImage}>
+            <img src={link.image} alt={link.title} />
           </div>
         )}
-        <span className={styles.linkTitle}>{link.title}</span>
       </div>
-      
-      {link.image && link.layout?.includes('image-right') && (
-        <div className={styles.previewLinkImage}>
-          <img src={link.image} alt={link.title} />
+
+      {/* Link Color Controls */}
+      {showColorControls && (
+        <div className={styles.linkColorControls}>
+          <label className={styles.colorControlLabel}>
+            <i className="fas fa-fill-drip"></i>
+            <input
+              type="color"
+              value={link.backgroundColor || '#ffffff'}
+              onChange={(e) => onUpdate(link.id, { backgroundColor: e.target.value, isTransparent: false })}
+              className={styles.colorPicker}
+              title="Change background color"
+            />
+          </label>
+          <label className={styles.colorControlLabel}>
+            <i className="fas fa-font"></i>
+            <input
+              type="color"
+              value={link.textColor || '#1a1a1a'}
+              onChange={(e) => onUpdate(link.id, { textColor: e.target.value })}
+              className={styles.colorPicker}
+              title="Change text color"
+            />
+          </label>
+          <button
+            className={styles.transparentBtn}
+            onClick={() => onUpdate(link.id, { isTransparent: !link.isTransparent })}
+            title={link.isTransparent ? 'Solid background' : 'Transparent background'}
+          >
+            <i className={link.isTransparent ? 'fas fa-square' : 'fas fa-square-full'}></i>
+          </button>
         </div>
       )}
       
@@ -182,6 +229,17 @@ export default function DashboardPage() {
   const [cardBackgroundVideo, setCardBackgroundVideo] = useState('');
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
 
+  // Text color states
+  const [usernameColor, setUsernameColor] = useState('#1a1a1a');
+  const [bioColor, setBioColor] = useState('#6b7280');
+  const [customTextColor, setCustomTextColor] = useState('#4b5563');
+  const [showUsernameColorPicker, setShowUsernameColorPicker] = useState(false);
+  const [showBioColorPicker, setShowBioColorPicker] = useState(false);
+
+  // Video refs for Safari compatibility
+  const pageVideoRef = useRef<HTMLVideoElement>(null);
+  const cardVideoRef = useRef<HTMLVideoElement>(null);
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -245,6 +303,9 @@ export default function DashboardPage() {
           setCardBackgroundColor(user.cardBackgroundColor || '#ffffff');
           setCardBackgroundImage(user.cardBackgroundImage || '');
           setCardBackgroundVideo(user.cardBackgroundVideo || '');
+          setUsernameColor(user.usernameColor || '#1a1a1a');
+          setBioColor(user.bioColor || '#6b7280');
+          setCustomTextColor(user.customTextColor || '#4b5563');
           
           // Check if user has set a custom username (not auto-generated)
           const usernamePattern = /^[a-z]+\d+$/; // Matches auto-generated pattern like "john123"
@@ -276,6 +337,42 @@ export default function DashboardPage() {
     loadUserData();
   }, [session, status, router]);
 
+  // Safari video compatibility - ensure videos loop infinitely
+  useEffect(() => {
+    const handleVideoLoop = (videoElement: HTMLVideoElement | null) => {
+      if (!videoElement) return;
+
+      const playVideo = () => {
+        videoElement.play().catch(err => {
+          console.log('Video autoplay prevented:', err);
+        });
+      };
+
+      const handleEnded = () => {
+        videoElement.currentTime = 0;
+        playVideo();
+      };
+
+      // Force play on mount
+      playVideo();
+
+      // Add ended event listener to restart video (Safari fallback)
+      videoElement.addEventListener('ended', handleEnded);
+
+      return () => {
+        videoElement.removeEventListener('ended', handleEnded);
+      };
+    };
+
+    const cleanupPage = handleVideoLoop(pageVideoRef.current);
+    const cleanupCard = handleVideoLoop(cardVideoRef.current);
+
+    return () => {
+      cleanupPage?.();
+      cleanupCard?.();
+    };
+  }, [backgroundVideo, cardBackgroundVideo]);
+
   const addLink = () => {
     const newLink: BioLink = {
       id: Date.now().toString(),
@@ -301,6 +398,24 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error deleting link:', error);
       showToast('Failed to delete link', 'error');
+    }
+  };
+
+  const updateLink = async (id: string, updates: Partial<BioLink>) => {
+    try {
+      const response = await fetch('/api/links', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates }),
+      });
+
+      if (response.ok) {
+        setBioLinks(bioLinks.map(link => 
+          link.id === id ? { ...link, ...updates } : link
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating link:', error);
     }
   };
 
@@ -835,10 +950,13 @@ export default function DashboardPage() {
           {/* Page Background Video */}
           {backgroundVideo && (
             <video
+              ref={pageVideoRef}
               autoPlay
               loop
               muted
               playsInline
+              webkit-playsinline="true"
+              preload="auto"
               className={styles.pageBackgroundVideo}
               style={{
                 position: 'absolute',
@@ -851,6 +969,7 @@ export default function DashboardPage() {
               }}
             >
               <source src={backgroundVideo} type="video/mp4" />
+              Your browser does not support the video tag.
             </video>
           )}
 
@@ -868,10 +987,13 @@ export default function DashboardPage() {
             {/* Card Background Video */}
             {cardBackgroundVideo && (
               <video
+                ref={cardVideoRef}
                 autoPlay
                 loop
                 muted
                 playsInline
+                webkit-playsinline="true"
+                preload="auto"
                 className={styles.cardBackgroundVideo}
                 style={{
                   position: 'absolute',
@@ -885,6 +1007,7 @@ export default function DashboardPage() {
                 }}
               >
                 <source src={cardBackgroundVideo} type="video/mp4" />
+                Your browser does not support the video tag.
               </video>
             )}
             {/* Profile Section */}
@@ -925,15 +1048,45 @@ export default function DashboardPage() {
                     onKeyDown={handleNameKeyPress}
                     autoFocus
                     maxLength={50}
+                    style={{ color: usernameColor }}
                   />
                 ) : (
-                  <h2 
-                    className={styles.profileName}
-                    onClick={handleNameClick}
-                    title="Click to edit name"
+                  <div 
+                    className={styles.textEditGroup}
+                    onMouseEnter={() => setShowUsernameColorPicker(true)}
+                    onMouseLeave={() => setShowUsernameColorPicker(false)}
                   >
-                    {displayName}
-                  </h2>
+                    <h2 
+                      className={styles.profileName}
+                      onClick={handleNameClick}
+                      title="Click to edit name"
+                      style={{ color: usernameColor }}
+                    >
+                      {displayName}
+                    </h2>
+                    {showUsernameColorPicker && (
+                      <div className={styles.textColorControls}>
+                        <label className={styles.colorControlLabel}>
+                          <i className="fas fa-palette"></i>
+                          <input
+                            type="color"
+                            value={usernameColor}
+                            onChange={async (e) => {
+                              const color = e.target.value;
+                              setUsernameColor(color);
+                              await fetch('/api/user/profile', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ usernameColor: color }),
+                              });
+                            }}
+                            className={styles.colorPicker}
+                            title="Change username color"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -948,15 +1101,45 @@ export default function DashboardPage() {
                     autoFocus
                     maxLength={150}
                     rows={3}
+                    style={{ color: bioColor }}
                   />
                 ) : (
-                  <p 
-                    className={styles.profileBio}
-                    onClick={handleBioClick}
-                    title="Click to edit bio"
+                  <div 
+                    className={styles.textEditGroup}
+                    onMouseEnter={() => setShowBioColorPicker(true)}
+                    onMouseLeave={() => setShowBioColorPicker(false)}
                   >
-                    {bio}
-                  </p>
+                    <p 
+                      className={styles.profileBio}
+                      onClick={handleBioClick}
+                      title="Click to edit bio"
+                      style={{ color: bioColor }}
+                    >
+                      {bio}
+                    </p>
+                    {showBioColorPicker && (
+                      <div className={styles.textColorControls}>
+                        <label className={styles.colorControlLabel}>
+                          <i className="fas fa-palette"></i>
+                          <input
+                            type="color"
+                            value={bioColor}
+                            onChange={async (e) => {
+                              const color = e.target.value;
+                              setBioColor(color);
+                              await fetch('/api/user/profile', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ bioColor: color }),
+                              });
+                            }}
+                            className={styles.colorPicker}
+                            title="Change bio color"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -1013,6 +1196,7 @@ export default function DashboardPage() {
                         key={link.id} 
                         link={link} 
                         onDelete={deleteLink}
+                        onUpdate={updateLink}
                       />
                     ))}
                   </SortableContext>
@@ -1023,7 +1207,44 @@ export default function DashboardPage() {
             {/* Custom Text Section */}
             {customText && (
               <div className={styles.customTextSection}>
-                <p className={styles.customText}>{customText}</p>
+                <div className={styles.customTextWrapper}>
+                  <p className={styles.customText} style={{ color: customTextColor }}>{customText}</p>
+                  <div className={styles.customTextControls}>
+                    <label className={styles.colorControlLabel}>
+                      <i className="fas fa-palette"></i>
+                      <input
+                        type="color"
+                        value={customTextColor}
+                        onChange={async (e) => {
+                          const color = e.target.value;
+                          setCustomTextColor(color);
+                          await fetch('/api/user/profile', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ customTextColor: color }),
+                          });
+                        }}
+                        className={styles.colorPicker}
+                        title="Change text color"
+                      />
+                    </label>
+                    <button
+                      className={styles.removeTextBtn}
+                      onClick={async () => {
+                        setCustomText('');
+                        await fetch('/api/user/profile', {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ customText: '' }),
+                        });
+                        showToast('Custom text removed', 'success');
+                      }}
+                      title="Remove custom text"
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

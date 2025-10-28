@@ -19,6 +19,9 @@ interface User extends RowDataPacket {
   card_background_image: string | null;
   card_background_video: string | null;
   custom_text: string | null;
+  username_color: string | null;
+  bio_color: string | null;
+  custom_text_color: string | null;
   is_published: boolean;
 }
 
@@ -34,7 +37,7 @@ export async function GET(request: NextRequest) {
     const [rows] = await db.query<User[]>(
       `SELECT id, username, email, name, bio, profile_image, theme_color, background_color, template, 
               background_image, background_video, card_background_color, card_background_image, 
-              card_background_video, custom_text, is_published 
+              card_background_video, custom_text, username_color, bio_color, custom_text_color, is_published 
        FROM users WHERE email = ? LIMIT 1`,
       [session.user.email]
     );
@@ -62,6 +65,9 @@ export async function GET(request: NextRequest) {
         cardBackgroundImage: user.card_background_image,
         cardBackgroundVideo: user.card_background_video,
         customText: user.custom_text,
+        usernameColor: user.username_color || '#1a1a1a',
+        bioColor: user.bio_color || '#6b7280',
+        customTextColor: user.custom_text_color || '#4b5563',
         isPublished: user.is_published,
       },
     });
@@ -97,6 +103,9 @@ export async function PATCH(request: NextRequest) {
       cardBackgroundImage,
       cardBackgroundVideo,
       customText,
+      usernameColor,
+      bioColor,
+      customTextColor,
       isPublished,
       username,
     } = body;
@@ -186,6 +195,18 @@ export async function PATCH(request: NextRequest) {
     if (customText !== undefined) {
       updates.push('custom_text = ?');
       values.push(customText);
+    }
+    if (usernameColor !== undefined) {
+      updates.push('username_color = ?');
+      values.push(usernameColor);
+    }
+    if (bioColor !== undefined) {
+      updates.push('bio_color = ?');
+      values.push(bioColor);
+    }
+    if (customTextColor !== undefined) {
+      updates.push('custom_text_color = ?');
+      values.push(customTextColor);
     }
     if (isPublished !== undefined) {
       updates.push('is_published = ?');

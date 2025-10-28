@@ -18,6 +18,9 @@ interface User extends RowDataPacket {
   card_background_image: string | null;
   card_background_video: string | null;
   custom_text: string | null;
+  username_color: string | null;
+  bio_color: string | null;
+  custom_text_color: string | null;
   is_published: boolean;
 }
 
@@ -28,6 +31,9 @@ interface BioLink extends RowDataPacket {
   icon: string | null;
   image: string | null;
   layout: string | null;
+  background_color: string | null;
+  text_color: string | null;
+  is_transparent: boolean;
   order: number;
 }
 
@@ -43,7 +49,7 @@ async function getUserByUsername(username: string) {
     const [rows] = await db.query<User[]>(
       `SELECT id, username, name, bio, profile_image, theme_color, background_color, template, 
               background_image, background_video, card_background_color, card_background_image,
-              card_background_video, custom_text, is_published
+              card_background_video, custom_text, username_color, bio_color, custom_text_color, is_published
        FROM users WHERE LOWER(username) = LOWER(?) AND is_published = TRUE LIMIT 1`,
       [username]
     );
@@ -58,7 +64,7 @@ async function getUserByUsername(username: string) {
 async function getUserLinks(userId: string) {
   try {
     const [rows] = await db.query<BioLink[]>(
-      `SELECT id, title, url, icon, image, layout, \`order\`
+      `SELECT id, title, url, icon, image, layout, background_color, text_color, is_transparent, \`order\`
        FROM bio_links WHERE user_id = ? AND is_visible = TRUE ORDER BY \`order\` ASC`,
       [userId]
     );
@@ -126,6 +132,9 @@ export default async function UsernamePage({ params }: { params: { username: str
         cardBackgroundImage: user.card_background_image || '',
         cardBackgroundVideo: user.card_background_video || '',
         customText: user.custom_text || '',
+        usernameColor: user.username_color || '#1a1a1a',
+        bioColor: user.bio_color || '#6b7280',
+        customTextColor: user.custom_text_color || '#4b5563',
       }}
       links={links.map(link => ({
         id: link.id,
@@ -134,6 +143,9 @@ export default async function UsernamePage({ params }: { params: { username: str
         icon: link.icon,
         image: link.image,
         layout: link.layout,
+        backgroundColor: link.background_color,
+        textColor: link.text_color,
+        isTransparent: link.is_transparent,
       }))}
       socials={socials.map(social => ({
         id: social.id,
