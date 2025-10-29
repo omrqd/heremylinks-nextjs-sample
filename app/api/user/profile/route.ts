@@ -11,6 +11,8 @@ interface User extends RowDataPacket {
   bio: string | null;
   profile_image: string | null;
   hero_image: string | null;
+  hero_height: number;
+  hide_profile_picture: boolean;
   theme_color: string | null;
   background_color: string | null;
   template: string | null;
@@ -36,9 +38,10 @@ export async function GET(request: NextRequest) {
     }
 
     const [rows] = await db.query<User[]>(
-      `SELECT id, username, email, name, bio, profile_image, hero_image, theme_color, background_color, template, 
-              background_image, background_video, card_background_color, card_background_image, 
-              card_background_video, custom_text, username_color, bio_color, custom_text_color, is_published 
+      `SELECT id, username, email, name, bio, profile_image, hero_image, hero_height, hide_profile_picture,
+              theme_color, background_color, template, background_image, background_video, 
+              card_background_color, card_background_image, card_background_video, custom_text, 
+              username_color, bio_color, custom_text_color, is_published 
        FROM users WHERE email = ? LIMIT 1`,
       [session.user.email]
     );
@@ -58,6 +61,8 @@ export async function GET(request: NextRequest) {
         bio: user.bio,
         profileImage: user.profile_image,
         heroImage: user.hero_image,
+        heroHeight: user.hero_height || 300,
+        hideProfilePicture: user.hide_profile_picture || false,
         themeColor: user.theme_color,
         backgroundColor: user.background_color,
         template: user.template || 'default',
@@ -97,6 +102,8 @@ export async function PATCH(request: NextRequest) {
       bio,
       profileImage,
       heroImage,
+      heroHeight,
+      hideProfilePicture,
       themeColor,
       backgroundColor,
       template,
@@ -166,6 +173,14 @@ export async function PATCH(request: NextRequest) {
     if (heroImage !== undefined) {
       updates.push('hero_image = ?');
       values.push(heroImage);
+    }
+    if (heroHeight !== undefined) {
+      updates.push('hero_height = ?');
+      values.push(heroHeight);
+    }
+    if (hideProfilePicture !== undefined) {
+      updates.push('hide_profile_picture = ?');
+      values.push(hideProfilePicture);
     }
     if (themeColor !== undefined) {
       updates.push('theme_color = ?');

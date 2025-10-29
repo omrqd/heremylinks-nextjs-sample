@@ -3,7 +3,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import FileUpload from '@/components/FileUpload';
+import dynamic from 'next/dynamic';
+import { CropData } from '@/components/ImageCropModal';
 import { useRouter } from 'next/navigation';
+
+// Dynamically import ImageCropModal
+const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 import {
   DndContext,
   closestCenter,
@@ -78,8 +83,19 @@ function SortableLinkItem({ link, onDelete, onUpdate, selectedTemplate }: { link
     ? styles[`preview${link.layout.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}`] 
     : styles.previewSimple;
 
+  // Determine if this is template3 and should use background image
+  const isTemplate3 = selectedTemplate === 'template3';
+  const shouldUseBackgroundImage = isTemplate3 && link.image && (
+    link.layout === 'image-top' || 
+    link.layout === 'image-top-left' || 
+    link.layout === 'image-top-right' || 
+    link.layout === 'image-large'
+  );
+  const hasImageBackground = shouldUseBackgroundImage;
+
   const linkStyle = {
-    backgroundColor: link.isTransparent ? 'transparent' : (link.backgroundColor || '#ffffff'),
+    // For template3 background images, make the inner content transparent by default
+    backgroundColor: shouldUseBackgroundImage ? 'transparent' : (link.isTransparent ? 'transparent' : (link.backgroundColor || '#ffffff')),
     color: link.textColor || '#1a1a1a',
   };
 
@@ -89,17 +105,14 @@ function SortableLinkItem({ link, onDelete, onUpdate, selectedTemplate }: { link
       backgroundColor: 'transparent',
       border: '2px dashed #cbd5e1' 
     }),
-    // For template3, apply image as background
-    ...(selectedTemplate === 'template3' && link.image && {
+    // For template3, apply image as background only for specific layouts
+    ...(shouldUseBackgroundImage && {
       backgroundImage: `url(${link.image})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
     }),
   };
-
-  const isTemplate3 = selectedTemplate === 'template3';
-  const hasImageBackground = isTemplate3 && link.image;
 
   return (
     <div 
@@ -108,7 +121,7 @@ function SortableLinkItem({ link, onDelete, onUpdate, selectedTemplate }: { link
       className={`${styles.bioLinkItem} ${layoutClass} ${isDragging ? styles.dragging : ''} ${link.isTransparent ? styles.transparentLink : ''} ${hasImageBackground ? styles.hasImage : ''}`}
       onClick={handleLinkClick}
     >
-      {/* Image Top - Outside linkInner wrapper */}
+      {/* Image Top - Outside linkInner wrapper (only for non-template3) */}
       {!isTemplate3 && link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
         <div className={styles.previewLinkImageTop}>
           <img src={link.image} alt={link.title} />
@@ -224,6 +237,11 @@ export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profileImage, setProfileImage] = useState('');
   const [heroImage, setHeroImage] = useState('');
+  const [heroHeight, setHeroHeight] = useState(300);
+  const [hideProfilePicture, setHideProfilePicture] = useState(false);
+  const [isResizingHero, setIsResizingHero] = useState(false);
+  const [isHoveringMockup, setIsHoveringMockup] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [displayName, setDisplayName] = useState('Your Name');
   const [username, setUsername] = useState('yourname');
   const [bio, setBio] = useState('Add your bio here');
@@ -268,7 +286,7 @@ export default function DashboardPage() {
   const [socialUrl, setSocialUrl] = useState('');
 
   // Templates states
-  const [selectedTemplate, setSelectedTemplate] = useState('default');
+  const [selectedTemplate, setSelectedTemplate] = useState('template3');
 
   // Bottom action buttons states
   const [showEditMenu, setShowEditMenu] = useState(false);
@@ -281,6 +299,12 @@ export default function DashboardPage() {
   const [cardBackgroundImage, setCardBackgroundImage] = useState('');
   const [cardBackgroundVideo, setCardBackgroundVideo] = useState('');
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
+
+  // Image crop modal states
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [cropAspectRatio, setCropAspectRatio] = useState<number | null>(16 / 9);
+  const [cropUploadType, setCropUploadType] = useState<'hero' | 'background' | 'card-background'>('hero');
 
   // Text color states
   const [usernameColor, setUsernameColor] = useState('#1a1a1a');
@@ -347,8 +371,10 @@ export default function DashboardPage() {
           setBio(user.bio || 'Add your bio here');
           setProfileImage(user.profileImage || '');
           setHeroImage(user.heroImage || '');
+          setHeroHeight(user.heroHeight || 300);
+          setHideProfilePicture(user.hideProfilePicture || false);
           setIsPublished(user.isPublished || false);
-          setSelectedTemplate(user.template || 'default');
+          setSelectedTemplate(user.template || 'template3');
           setCustomText(user.customText || '');
           setBackgroundImage(user.backgroundImage || '');
           setBackgroundVideo(user.backgroundVideo || '');
@@ -650,18 +676,17 @@ export default function DashboardPage() {
   };
 
   const handleBioSave = async () => {
-    if (tempBio.trim()) {
-      setBio(tempBio.trim());
-      // Save to database
-      try {
-        await fetch('/api/user/profile', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bio: tempBio.trim() }),
-        });
-      } catch (error) {
-        console.error('Error saving bio:', error);
-      }
+    // Allow empty bio - user can completely remove it
+    setBio(tempBio.trim());
+    // Save to database
+    try {
+      await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: tempBio.trim() }),
+      });
+    } catch (error) {
+      console.error('Error saving bio:', error);
     }
     setIsEditingBio(false);
   };
@@ -711,6 +736,153 @@ export default function DashboardPage() {
       console.error('Error saving hero image:', error);
       showToast('Failed to update hero image', 'error');
     }
+  };
+
+  // Handle hero height change
+  const handleHeroHeightChange = async (newHeight: number) => {
+    setHeroHeight(newHeight);
+    
+    // Save to database
+    try {
+      await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heroHeight: newHeight }),
+      });
+    } catch (error) {
+      console.error('Error saving hero height:', error);
+    }
+  };
+
+  // Handle hero banner hover with delay
+  const handleHeroBannerEnter = () => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setIsHoveringMockup(true);
+  };
+
+  const handleHeroBannerLeave = () => {
+    // Set a 2-second delay before hiding the resize handle
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHoveringMockup(false);
+      hoverTimeoutRef.current = null;
+    }, 2000);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Toggle profile picture visibility
+  const handleToggleProfilePicture = async () => {
+    const newValue = !hideProfilePicture;
+    setHideProfilePicture(newValue);
+    
+    // Save to database
+    try {
+      await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hideProfilePicture: newValue }),
+      });
+      showToast(
+        newValue ? 'Profile picture hidden' : 'Profile picture shown',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error toggling profile picture:', error);
+      showToast('Failed to update profile picture visibility', 'error');
+    }
+  };
+
+  // Handle crop complete
+  const handleCropComplete = async (croppedImageUrl: string, cropData: CropData) => {
+    setShowCropModal(false);
+    setIsUploadingBackground(true);
+
+    try {
+      // Convert blob URL to File
+      const response = await fetch(croppedImageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
+
+      // Upload the cropped file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadResponse = await fetch(`/api/upload?type=${cropUploadType === 'hero' ? 'hero' : 'profile'}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        showToast('Failed to upload cropped image', 'error');
+        return;
+      }
+
+      const { fileUrl } = await uploadResponse.json();
+
+      // Handle different upload types
+      if (cropUploadType === 'hero') {
+        handleHeroImageUpload(fileUrl);
+      } else if (cropUploadType === 'background' || cropUploadType === 'card-background') {
+        // For background images, use the background upload endpoint
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'image');
+        
+        const bgUploadResponse = await fetch('/api/upload/background', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!bgUploadResponse.ok) {
+          showToast('Failed to upload image', 'error');
+          return;
+        }
+        
+        const { path } = await bgUploadResponse.json();
+        
+        if (cropUploadType === 'background') {
+          setBackgroundImage(path);
+          await fetch('/api/user/profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ backgroundImage: path }),
+          });
+          showToast('Background image updated! 🎨', 'success');
+        } else {
+          setCardBackgroundImage(path);
+          await fetch('/api/user/profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cardBackgroundImage: path }),
+          });
+          showToast('Card background image updated! 🎨', 'success');
+        }
+      }
+
+      // Clean up blob URL
+      URL.revokeObjectURL(croppedImageUrl);
+    } catch (error) {
+      console.error('Error uploading cropped image:', error);
+      showToast('Failed to upload cropped image', 'error');
+    } finally {
+      setIsUploadingBackground(false);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    setImageToCrop(null);
   };
 
   // Add Link Section handlers (changed from modal to inline)
@@ -964,6 +1136,16 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.dashboardContainer}>
+      {/* Image Crop Modal */}
+      {showCropModal && imageToCrop && (
+        <ImageCropModal
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          aspectRatio={cropAspectRatio}
+        />
+      )}
+
       {/* Sidebar */}
       <Sidebar 
         isOpen={isSidebarOpen}
@@ -1055,7 +1237,8 @@ export default function DashboardPage() {
               selectedTemplate === 'template3' ? styles.template3 : ''
             }`}
             style={{
-              backgroundColor: cardBackgroundColor,
+              // For template3, always use black background - don't apply cardBackgroundColor
+              backgroundColor: selectedTemplate === 'template3' ? '#000000' : cardBackgroundColor,
               backgroundImage: cardBackgroundImage ? `url(${cardBackgroundImage})` : 'none',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
@@ -1065,15 +1248,26 @@ export default function DashboardPage() {
           >
             {/* Hero Image Section - Template 3 Only */}
             {selectedTemplate === 'template3' && (
-              <div className={styles.heroImageWrapper} style={{ position: 'relative' }}>
+              <div 
+                className={styles.heroImageWrapper} 
+                style={{ 
+                  position: 'relative',
+                  height: `${heroHeight}px`,
+                  minHeight: '200px',
+                  maxHeight: '600px'
+                }}
+                onMouseEnter={handleHeroBannerEnter}
+                onMouseLeave={handleHeroBannerLeave}
+              >
                 {heroImage ? (
-                  <img src={heroImage} alt="Hero banner" className={styles.heroImage} />
+                  <img src={heroImage} alt="Hero banner" className={styles.heroImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <div style={{ width: '100%', height: '300px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px' }}>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px' }}>
                     Click + icon below to add hero image
                   </div>
                 )}
                 <div className={styles.heroGradient}></div>
+                
                 
                 {/* Hero Image Upload Button */}
                 <FileUpload
@@ -1082,10 +1276,61 @@ export default function DashboardPage() {
                   currentImage={heroImage}
                   hideButton={true}
                   showPreview={false}
+                  enableCrop={true}
+                  cropAspectRatio={null}
                   ref={(ref) => {
                     // Store this ref if needed
                   }}
                 />
+                
+                {/* Hero Resize Handle - Only show on hover */}
+                {isHoveringMockup && (
+                  <div 
+                    className={styles.heroResizeHandle}
+                    onClick={() => console.log('Resize handle clicked!')}
+                    onMouseEnter={handleHeroBannerEnter}
+                    onMouseLeave={handleHeroBannerLeave}
+                    onMouseDown={(e: React.MouseEvent) => {
+                      console.log('Mouse down on resize handle');
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsResizingHero(true);
+                      const startY = e.clientY;
+                      const startHeight = heroHeight;
+                      let currentHeight = startHeight;
+                      
+                      const handleMouseMove = (moveEvent: any) => {
+                        moveEvent.preventDefault();
+                        const delta = moveEvent.clientY - startY;
+                        currentHeight = Math.max(200, Math.min(600, startHeight + delta));
+                        console.log('Dragging, new height:', currentHeight);
+                        setHeroHeight(currentHeight);
+                      };
+                      
+                      const handleMouseUp = async () => {
+                        console.log('Mouse up, final height:', currentHeight);
+                        setIsResizingHero(false);
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                        // Save to database
+                        await handleHeroHeightChange(currentHeight);
+                        showToast('Hero height updated!', 'success');
+                      };
+                      
+                      document.addEventListener('mousemove', handleMouseMove);
+                      document.addEventListener('mouseup', handleMouseUp);
+                    }}
+                    style={{ 
+                      cursor: isResizingHero ? 'ns-resize' : 'grab',
+                      touchAction: 'none'
+                    }}
+                  >
+                    <div className={styles.resizeIcon}>
+                      <i className="fas fa-arrows-alt-v"></i>
+                      <span>Drag to resize height</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1117,20 +1362,39 @@ export default function DashboardPage() {
             )}
             {/* Profile Section */}
             <div className={styles.profileSection}>
-              <div 
-                className={styles.profileImage} 
-                onClick={handleImageClick}
-                title="Click to upload profile picture"
-              >
-                {profileImage ? (
-                  <img src={profileImage} alt={displayName} />
-                ) : (
-                  <i className="fas fa-user"></i>
-                )}
-                <div className={styles.imageOverlay}>
-                  <i className="fas fa-camera"></i>
+              {/* Completely hide profile picture when hideProfilePicture is true */}
+              {!hideProfilePicture && (
+                <div className={styles.profilePictureWrapper}>
+                  <div 
+                    className={styles.profileImage} 
+                    onClick={handleImageClick}
+                    title="Click to upload profile picture"
+                  >
+                    {profileImage ? (
+                      <img src={profileImage} alt={displayName} />
+                    ) : (
+                      <i className="fas fa-user"></i>
+                    )}
+                    <div className={styles.imageOverlay}>
+                      <i className="fas fa-camera"></i>
+                    </div>
+                    
+                    {/* Hide Profile Picture Button - Template 3 Only */}
+                    {selectedTemplate === 'template3' && (
+                      <div 
+                        className={styles.profileHideButton}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleProfilePicture();
+                        }}
+                        title="Hide profile picture"
+                      >
+                        <i className="fas fa-eye-slash"></i>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
               
               <FileUpload
                 onUploadComplete={handleProfileImageUpload}
@@ -1139,6 +1403,8 @@ export default function DashboardPage() {
                 className={styles.hiddenFileUpload}
                 hideButton={true}
                 showPreview={false}
+                enableCrop={true}
+                cropAspectRatio={1}
                 ref={fileInputRef}
               />
 
@@ -1426,35 +1692,36 @@ export default function DashboardPage() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            try {
-                              setIsUploadingBackground(true);
-                              
-                              const formData = new FormData();
-                              formData.append('file', file);
-                              
-                              const uploadResponse = await fetch('/api/upload?type=hero', {
-                                method: 'POST',
-                                body: formData,
-                              });
-                              
-                              if (!uploadResponse.ok) {
-                                showToast('Failed to upload hero image', 'error');
-                                return;
-                              }
-                              
-                              const { fileUrl } = await uploadResponse.json();
-                              handleHeroImageUpload(fileUrl);
-                            } catch (error) {
-                              console.error('Error uploading hero image:', error);
-                              showToast('Failed to upload hero image', 'error');
-                            } finally {
-                              setIsUploadingBackground(false);
-                            }
+                            // Show crop modal with free-form aspect ratio for hero images
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setImageToCrop(reader.result as string);
+                              setCropAspectRatio(null); // Free-form cropping for hero images
+                              setCropUploadType('hero');
+                              setShowCropModal(true);
+                            };
+                            reader.readAsDataURL(file);
                           }
                           setShowEditMenu(false);
+                          // Reset input
+                          e.target.value = '';
                         }}
                         style={{ display: 'none' }}
                       />
+                    </button>
+                  )}
+                  
+                  {/* Hide/Show Profile Picture - Only for Template 3 */}
+                  {selectedTemplate === 'template3' && (
+                    <button 
+                      className={styles.dropupItem}
+                      onClick={() => {
+                        handleToggleProfilePicture();
+                        setShowEditMenu(false);
+                      }}
+                    >
+                      <i className={hideProfilePicture ? "fas fa-eye" : "fas fa-eye-slash"}></i>
+                      <span>{hideProfilePicture ? 'Show Profile Picture' : 'Hide Profile Picture'}</span>
                     </button>
                   )}
 
@@ -1470,44 +1737,19 @@ export default function DashboardPage() {
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          try {
-                            setIsUploadingBackground(true);
-                            
-                            // Upload file
-                            const formData = new FormData();
-                            formData.append('file', file);
-                            formData.append('type', 'image');
-                            
-                            const uploadResponse = await fetch('/api/upload/background', {
-                              method: 'POST',
-                              body: formData,
-                            });
-                            
-                            if (!uploadResponse.ok) {
-                              const errorData = await uploadResponse.json();
-                              showToast(errorData.error || 'Failed to upload image', 'error');
-                              return;
-                            }
-                            
-                            const { path } = await uploadResponse.json();
-                            setBackgroundImage(path);
-                            
-                            // Save path to database
-                            await fetch('/api/user/profile', {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ backgroundImage: path }),
-                            });
-                            
-                            showToast('Background image updated! 🎨', 'success');
-                          } catch (error) {
-                            console.error('Error uploading image:', error);
-                            showToast('Failed to upload image', 'error');
-                          } finally {
-                            setIsUploadingBackground(false);
-                          }
+                          // Show crop modal
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setImageToCrop(reader.result as string);
+                            setCropAspectRatio(16 / 9);
+                            setCropUploadType('background');
+                            setShowCropModal(true);
+                          };
+                          reader.readAsDataURL(file);
                         }
                         setShowEditMenu(false);
+                        // Reset input
+                        e.target.value = '';
                       }}
                       style={{ display: 'none' }}
                     />
@@ -1616,42 +1858,19 @@ export default function DashboardPage() {
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          try {
-                            setIsUploadingBackground(true);
-                            
-                            const formData = new FormData();
-                            formData.append('file', file);
-                            formData.append('type', 'image');
-                            
-                            const uploadResponse = await fetch('/api/upload/background', {
-                              method: 'POST',
-                              body: formData,
-                            });
-                            
-                            if (!uploadResponse.ok) {
-                              const errorData = await uploadResponse.json();
-                              showToast(errorData.error || 'Failed to upload image', 'error');
-                              return;
-                            }
-                            
-                            const { path } = await uploadResponse.json();
-                            setCardBackgroundImage(path);
-                            
-                            await fetch('/api/user/profile', {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ cardBackgroundImage: path }),
-                            });
-                            
-                            showToast('Card background image updated! 🎨', 'success');
-                          } catch (error) {
-                            console.error('Error uploading image:', error);
-                            showToast('Failed to upload image', 'error');
-                          } finally {
-                            setIsUploadingBackground(false);
-                          }
+                          // Show crop modal
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setImageToCrop(reader.result as string);
+                            setCropAspectRatio(9 / 16); // Portrait for card
+                            setCropUploadType('card-background');
+                            setShowCropModal(true);
+                          };
+                          reader.readAsDataURL(file);
                         }
                         setShowEditMenu(false);
+                        // Reset input
+                        e.target.value = '';
                       }}
                       style={{ display: 'none' }}
                     />
@@ -1930,6 +2149,8 @@ export default function DashboardPage() {
                           <FileUpload
                             onUploadComplete={(fileUrl) => setLinkImage(fileUrl)}
                             uploadType="link"
+                            enableCrop={true}
+                            cropAspectRatio={4 / 3}
                           />
                         </div>
                       )}

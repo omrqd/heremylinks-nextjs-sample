@@ -3623,8 +3623,9 @@
 
 /* ==================== TEMPLATE 3 STYLES (Influencer/Modern Hero) ==================== */
 .phoneMockup.template3 {
-    background: #0A0A0A;
+    background: #000000;
     padding: 0;
+    border-radius: 40px;
 }
 
 /* Hero Image Section */
@@ -3637,9 +3638,10 @@
 
 .phoneMockup.template3 .heroImage {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
     object-fit: cover;
+    object-position: center;
 }
 
 .phoneMockup.template3 .heroGradient {
@@ -3695,19 +3697,23 @@
 /* Social Icons Row */
 .phoneMockup.template3 .socialIconsContainer {
     gap: 8px;
-    padding: 0 0 20px 0;
-    margin: 0 0 20px 0;
+    padding: 0 0 8px 0;
+    margin: 0 0 8px 0;
 }
 
 .phoneMockup.template3 .socialIcon {
     width: 40px;
     height: 40px;
+    background: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     box-shadow: none;
 }
 
 .phoneMockup.template3 .socialIcon:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px) scale(1.05);
 }
 
 /* Bio Text */
@@ -3903,3 +3909,142 @@
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Hero Image Resize Handle */
+.heroResizeHandle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab !important;
+  transition: all 0.3s ease;
+  z-index: 100;
+  border-radius: 0 0 12px 12px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.heroResizeHandle:active {
+  cursor: ns-resize !important;
+  background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+  transform: scale(1.02);
+}
+
+.heroResizeHandle:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+  transform: translateY(-2px);
+}
+
+.resizeIcon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.resizeIcon i {
+  font-size: 20px;
+  pointer-events: none;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Profile Picture Hide Button - Template 3 */
+.profileHideButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  background: rgba(239, 68, 68, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 6;
+}
+
+.profileImage:hover .profileHideButton {
+  opacity: 1;
+}
+
+.profileHideButton:hover {
+  background: rgba(220, 38, 38, 1);
+  transform: scale(1.1);
+}
+
+.profileHideButton i {
+  color: white;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.profilePictureWrapper {
+  position: relative;
+}
+
+
+/* Restore Profile Picture Button */
+.restoreProfileButton {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 0 auto 24px;
+  color: white;
+  gap: 8px;
+}
+
+.restoreProfileButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.restoreProfileButton i {
+  font-size: 32px;
+}
+
+.restoreProfileButton span {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+
+/* Empty State for Template 3 - Center properly in grid */
+.phoneMockup.template3 .emptyState {
+  grid-column: 1 / -1; /* Span all columns */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+}
+

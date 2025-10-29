@@ -735,11 +735,13 @@
 
 /* ==================== TEMPLATE 3 STYLES (Influencer/Modern Hero) ==================== */
 .publicBioContainer:has(.bioCard.template3) {
-    background: #0A0A0A;
+    background: #000000;
 }
 
 .bioCard.template3 {
+    background: #000000;
     padding: 0;
+    border-radius: 40px;
 }
 
 /* Hero Image Section */
@@ -752,9 +754,10 @@
 
 .bioCard.template3 .heroImage {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
     object-fit: cover;
+    object-position: center;
 }
 
 .bioCard.template3 .heroGradient {
@@ -807,14 +810,23 @@
 /* Social Icons Row */
 .bioCard.template3 .socialIconsContainer {
     gap: 8px;
-    padding: 0 0 20px 0;
-    margin: 0 0 20px 0;
+    padding: 0 0 8px 0;
+    margin: 0 0 8px 0;
 }
 
 .bioCard.template3 .socialIcon {
     width: 40px;
     height: 40px;
+    background: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     box-shadow: none;
+}
+
+.bioCard.template3 .socialIcon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px) scale(1.05);
 }
 
 /* Bio Text */
@@ -831,6 +843,16 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     padding: 0 16px 32px;
+}
+
+/* Empty state should span all columns and be centered */
+.bioCard.template3 .noLinks {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
 }
 
 /* Image-based Link Cards */
@@ -916,6 +938,12 @@
 .bioCard.template3 .customText {
     color: #e5e7eb;
     font-size: 14px;
+}
+
+/* Footer - No border for template3 */
+.bioCard.template3 .footer {
+    border-top: none;
+    background: transparent;
 }
 
 /* Responsive adjustments */

@@ -10,6 +10,8 @@ interface User extends RowDataPacket {
   bio: string | null;
   profile_image: string | null;
   hero_image: string | null;
+  hero_height: number;
+  hide_profile_picture: boolean;
   theme_color: string | null;
   background_color: string | null;
   template: string | null;
@@ -48,9 +50,10 @@ interface SocialLink extends RowDataPacket {
 async function getUserByUsername(username: string) {
   try {
     const [rows] = await db.query<User[]>(
-      `SELECT id, username, name, bio, profile_image, hero_image, theme_color, background_color, template, 
-              background_image, background_video, card_background_color, card_background_image,
-              card_background_video, custom_text, username_color, bio_color, custom_text_color, is_published
+      `SELECT id, username, name, bio, profile_image, hero_image, hero_height, hide_profile_picture, 
+              theme_color, background_color, template, background_image, background_video, 
+              card_background_color, card_background_image, card_background_video, custom_text, 
+              username_color, bio_color, custom_text_color, is_published
        FROM users WHERE LOWER(username) = LOWER(?) AND is_published = TRUE LIMIT 1`,
       [username]
     );
@@ -125,9 +128,11 @@ export default async function UsernamePage({ params }: { params: { username: str
         bio: user.bio || '',
         profileImage: user.profile_image || '',
         heroImage: user.hero_image || '',
+        heroHeight: user.hero_height || 300,
+        hideProfilePicture: user.hide_profile_picture || false,
         themeColor: user.theme_color || '#667eea',
         backgroundColor: user.background_color || '#ffffff',
-        template: user.template || 'default',
+        template: user.template || 'template3',
         backgroundImage: user.background_image || '',
         backgroundVideo: user.background_video || '',
         cardBackgroundColor: user.card_background_color || '#ffffff',

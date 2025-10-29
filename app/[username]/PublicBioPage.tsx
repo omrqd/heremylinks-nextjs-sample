@@ -10,6 +10,8 @@ interface User {
   bio: string;
   profileImage: string;
   heroImage: string;
+  heroHeight: number;
+  hideProfilePicture: boolean;
   themeColor: string;
   backgroundColor: string;
   template: string;
@@ -151,7 +153,8 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
           user.template === 'template3' ? styles.template3 : ''
         }`}
         style={{
-          backgroundColor: user.cardBackgroundColor,
+          // For template3, always use black background - don't apply cardBackgroundColor
+          backgroundColor: user.template === 'template3' ? '#000000' : user.cardBackgroundColor,
           backgroundImage: user.cardBackgroundImage ? `url(${user.cardBackgroundImage})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -160,11 +163,11 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
       >
         {/* Hero Image Section - Template 3 Only */}
         {user.template === 'template3' && (
-          <div className={styles.heroImageWrapper}>
+          <div className={styles.heroImageWrapper} style={{ height: `${user.heroHeight}px` }}>
             {user.heroImage ? (
-              <img src={user.heroImage} alt="Hero banner" className={styles.heroImage} />
+              <img src={user.heroImage} alt="Hero banner" className={styles.heroImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <div style={{ width: '100%', height: '300px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}></div>
+              <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}></div>
             )}
             <div className={styles.heroGradient}></div>
           </div>
@@ -198,15 +201,18 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
         )}
         {/* Profile Section */}
         <div className={styles.profileSection}>
-          <div className={styles.profileImageWrapper}>
-            {user.profileImage ? (
-              <img src={user.profileImage} alt={user.name} className={styles.profileImage} />
-            ) : (
-              <div className={styles.profilePlaceholder} style={{ background: user.themeColor }}>
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
+          {/* Conditionally hide profile picture in template3 */}
+          {!(user.template === 'template3' && user.hideProfilePicture) && (
+            <div className={styles.profileImageWrapper}>
+              {user.profileImage ? (
+                <img src={user.profileImage} alt={user.name} className={styles.profileImage} />
+              ) : (
+                <div className={styles.profilePlaceholder} style={{ background: user.themeColor }}>
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+          )}
 
           <h1 className={styles.profileName} style={{ color: user.usernameColor }}>
             {user.name}
@@ -263,14 +269,21 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
                 : styles.layoutSimple;
 
               const isTemplate3 = user.template === 'template3';
-              const hasImageBackground = isTemplate3 && link.image;
+              const shouldUseBackgroundImage = isTemplate3 && link.image && (
+                link.layout === 'image-top' || 
+                link.layout === 'image-top-left' || 
+                link.layout === 'image-top-right' || 
+                link.layout === 'image-large'
+              );
+              const hasImageBackground = shouldUseBackgroundImage;
 
               const linkStyle = {
-                backgroundColor: link.isTransparent ? 'transparent' : (link.backgroundColor || '#ffffff'),
+                // For template3 background images, make transparent by default
+                backgroundColor: shouldUseBackgroundImage ? 'transparent' : (link.isTransparent ? 'transparent' : (link.backgroundColor || '#ffffff')),
                 borderColor: link.isTransparent ? 'rgba(255, 255, 255, 0.3)' : user.themeColor,
                 border: link.isTransparent ? '2px solid rgba(255, 255, 255, 0.3)' : `2px solid ${user.themeColor}`,
-                // For template3, apply image as background
-                ...(hasImageBackground && {
+                // For template3, apply image as background for specific layouts
+                ...(shouldUseBackgroundImage && {
                   backgroundImage: `url(${link.image})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
@@ -342,7 +355,12 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
         {/* Footer */}
         <div className={styles.footer}>
           <a href="/" className={styles.footerLink}>
-            <Image src="/imgs/logo.png" alt="HereMyLinks" width={120} height={30} />
+            <Image 
+              src={user.template === 'template3' ? "/imgs/white-logo.png" : "/imgs/logo.png"} 
+              alt="HereMyLinks" 
+              width={120} 
+              height={30} 
+            />
           </a>
         </div>
       </div>
