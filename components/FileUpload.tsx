@@ -2,22 +2,15 @@
 
 import { useState, useRef, forwardRef } from 'react';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
-import { CropData } from './ImageCropModal';
-
-// Dynamically import the crop modal to avoid SSR issues
-const ImageCropModal = dynamic(() => import('./ImageCropModal'), { ssr: false });
 
 interface FileUploadProps {
   onUploadComplete: (fileUrl: string) => void;
-  uploadType: 'profile' | 'link' | 'hero';
+  uploadType: 'profile' | 'link';
   className?: string;
   currentImage?: string;
   buttonText?: string;
   hideButton?: boolean;
   showPreview?: boolean; // allow hiding preview when component is used invisibly
-  enableCrop?: boolean; // Enable cropping feature
-  cropAspectRatio?: number | null; // Aspect ratio for cropping (default 16:9, null for free-form)
 }
 
 const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
@@ -27,18 +20,13 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
   currentImage,
   buttonText = 'Upload Image',
   hideButton = false,
-  showPreview = true,
-  enableCrop = false,
-  cropAspectRatio = 16 / 9
+  showPreview = true
 }, ref) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage || null);
   const localFileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [showCropModal, setShowCropModal] = useState(false);
-  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   // Use the forwarded ref if provided, otherwise use local ref
   const fileInputRef = (ref as React.RefObject<HTMLInputElement>) || localFileInputRef;
@@ -59,24 +47,6 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
     }
 
     setError(null);
-
-    // If cropping is enabled, show crop modal instead of uploading directly
-    if (enableCrop) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImageToCrop(reader.result as string);
-        setSelectedFile(file);
-        setShowCropModal(true);
-      };
-      reader.readAsDataURL(file);
-      return;
-    }
-
-    // Otherwise, upload directly
-    await uploadFile(file);
-  };
-
-  const uploadFile = async (file: File) => {
     setIsUploading(true);
 
     try {
@@ -101,34 +71,6 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const handleCropComplete = async (croppedImageUrl: string, cropData: CropData) => {
-    setShowCropModal(false);
-    
-    // Convert the cropped image URL (blob) to a File object
-    try {
-      const response = await fetch(croppedImageUrl);
-      const blob = await response.blob();
-      const croppedFile = new File([blob], selectedFile?.name || 'cropped-image.jpg', {
-        type: 'image/jpeg',
-      });
-
-      // Upload the cropped file
-      await uploadFile(croppedFile);
-      
-      // Clean up blob URL
-      URL.revokeObjectURL(croppedImageUrl);
-    } catch (err) {
-      setError('Failed to process cropped image');
-      console.error(err);
-    }
-  };
-
-  const handleCropCancel = () => {
-    setShowCropModal(false);
-    setImageToCrop(null);
-    setSelectedFile(null);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,38 +103,27 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
   };
 
   return (
-    <>
-      {/* Crop Modal */}
-      {showCropModal && imageToCrop && (
-        <ImageCropModal
-          imageSrc={imageToCrop}
-          onCropComplete={handleCropComplete}
-          onCancel={handleCropCancel}
-          aspectRatio={cropAspectRatio}
-        />
+    <div className={`file-upload ${className}`}>
+      {showPreview && previewUrl && (
+        <div className="imagePreview">
+          <Image 
+            src={previewUrl} 
+            alt="Preview" 
+            fill
+            style={{ objectFit: 'cover' }}
+          />
+          <button 
+            onClick={() => {
+              setPreviewUrl(null);
+              onUploadComplete('');
+            }}
+            className="removeImageBtn"
+            type="button"
+          >
+            <i className="fas fa-times" />
+          </button>
+        </div>
       )}
-
-      <div className={`file-upload ${className}`}>
-        {showPreview && previewUrl && (
-          <div className="imagePreview">
-            <Image 
-              src={previewUrl} 
-              alt="Preview" 
-              fill
-              style={{ objectFit: 'cover' }}
-            />
-            <button 
-              onClick={() => {
-                setPreviewUrl(null);
-                onUploadComplete('');
-              }}
-              className="removeImageBtn"
-              type="button"
-            >
-              <i className="fas fa-times" />
-            </button>
-          </div>
-        )}
       
       <input
         type="file"
@@ -216,17 +147,11 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
         >
           <div className="uploadPrompt">
             {isUploading ? (
-              <>
-                <i className="fas fa-spinner fa-spin" />
-                <p>Uploading image…</p>
-              </>
+              <i className="fas fa-spinner fa-spin" />
             ) : (
-              <>
-                <i className="fas fa-cloud-upload-alt" style={{ fontSize: '24px', marginBottom: '12px' }}></i>
-                <p><strong>Click to upload</strong> or drag and drop</p>
-                <p>SVG, PNG, JPG or GIF (max. 800x400px)</p>
-              </>
+              <i className="fas fa-cloud-upload-alt" />
             )}
+            <p>{isUploading ? 'Uploading image…' : 'Drag and drop an image here, or click to upload'}</p>
           </div>
         </div>
       )}
@@ -259,8 +184,7 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
       )}
 
       {error && <p className="error-message" style={{ color: 'red', marginTop: '5px', fontSize: '14px' }}>{error}</p>}
-      </div>
-    </>
+    </div>
   );
 });
 
