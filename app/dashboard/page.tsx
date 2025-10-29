@@ -47,7 +47,7 @@ interface SocialLink {
 }
 
 // Sortable Link Item Component
-function SortableLinkItem({ link, onDelete, onUpdate }: { link: BioLink; onDelete: (id: string) => void; onUpdate: (id: string, updates: Partial<BioLink>) => void }) {
+function SortableLinkItem({ link, onDelete, onUpdate, selectedTemplate }: { link: BioLink; onDelete: (id: string) => void; onUpdate: (id: string, updates: Partial<BioLink>) => void; selectedTemplate: string }) {
   const {
     attributes,
     listeners,
@@ -58,6 +58,15 @@ function SortableLinkItem({ link, onDelete, onUpdate }: { link: BioLink; onDelet
   } = useSortable({ id: link.id });
 
   const [showColorControls, setShowColorControls] = useState(false);
+
+  const handleLinkClick = (e: React.MouseEvent) => {
+    // If clicking on the link itself (not color controls or action buttons), toggle color controls
+    if ((e.target as HTMLElement).closest(`.${styles.linkColorControls}`) || 
+        (e.target as HTMLElement).closest(`.${styles.linkActions}`)) {
+      return;
+    }
+    setShowColorControls(!showColorControls);
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -71,49 +80,88 @@ function SortableLinkItem({ link, onDelete, onUpdate }: { link: BioLink; onDelet
 
   const linkStyle = {
     backgroundColor: link.isTransparent ? 'transparent' : (link.backgroundColor || '#ffffff'),
-    border: link.isTransparent ? '2px solid rgba(255, 255, 255, 0.3)' : undefined,
+    color: link.textColor || '#1a1a1a',
   };
+
+  const itemStyle = {
+    ...style,
+    ...(link.isTransparent && { 
+      backgroundColor: 'transparent',
+      border: '2px dashed #cbd5e1' 
+    }),
+    // For template3, apply image as background
+    ...(selectedTemplate === 'template3' && link.image && {
+      backgroundImage: `url(${link.image})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    }),
+  };
+
+  const isTemplate3 = selectedTemplate === 'template3';
+  const hasImageBackground = isTemplate3 && link.image;
 
   return (
     <div 
       ref={setNodeRef} 
-      style={style} 
-      className={`${styles.bioLinkItem} ${layoutClass} ${isDragging ? styles.dragging : ''}`}
-      onMouseEnter={() => setShowColorControls(true)}
-      onMouseLeave={() => setShowColorControls(false)}
+      style={itemStyle} 
+      className={`${styles.bioLinkItem} ${layoutClass} ${isDragging ? styles.dragging : ''} ${link.isTransparent ? styles.transparentLink : ''} ${hasImageBackground ? styles.hasImage : ''}`}
+      onClick={handleLinkClick}
     >
-      <div className={styles.linkInner} style={linkStyle}>
-      {link.image && link.layout?.includes('image-left') && (
-        <div className={styles.previewLinkImage}>
-          <img src={link.image} alt={link.title} />
-        </div>
-      )}
-      
-      {link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
+      {/* Image Top - Outside linkInner wrapper */}
+      {!isTemplate3 && link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
         <div className={styles.previewLinkImageTop}>
           <img src={link.image} alt={link.title} />
         </div>
       )}
-      
-        <div className={styles.linkContent}>
-          {link.icon && !link.image && (
+
+      <div className={styles.linkInner} style={linkStyle}>
+      {/* Template3: Render icon badge in top-right and title in bottom-left */}
+      {isTemplate3 && hasImageBackground ? (
+        <>
+          {link.icon && (
             <div className={styles.linkIcon}>
               <i className={link.icon}></i>
             </div>
           )}
-          <span className={styles.linkTitle} style={{ color: link.textColor || '#1a1a1a' }}>{link.title}</span>
-        </div>
-        
-        {link.image && link.layout?.includes('image-right') && (
-          <div className={styles.previewLinkImage}>
-            <img src={link.image} alt={link.title} />
+          <span className={styles.linkTitle}>{link.title}</span>
+        </>
+      ) : (
+        <>
+          {link.image && link.layout?.includes('image-left') && (
+            <div className={styles.previewLinkImage}>
+              <img src={link.image} alt={link.title} />
+            </div>
+          )}
+          
+          <div className={styles.linkContent}>
+            {link.icon && !link.image && (
+              <div className={styles.linkIcon}>
+                <i className={link.icon}></i>
+              </div>
+            )}
+            <span className={styles.linkTitle} style={{ color: link.textColor || '#1a1a1a' }}>{link.title}</span>
           </div>
-        )}
+          
+          {link.image && link.layout?.includes('image-right') && (
+            <div className={styles.previewLinkImage}>
+              <img src={link.image} alt={link.title} />
+            </div>
+          )}
+        </>
+      )}
       </div>
 
       {/* Link Color Controls */}
       {showColorControls && (
-        <div className={styles.linkColorControls}>
+        <div 
+          className={styles.linkColorControls}
+          onMouseDown={(e) => {
+            e.preventDefault(); // Prevent any blur events
+            e.stopPropagation();
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <label className={styles.colorControlLabel}>
             <i className="fas fa-fill-drip"></i>
             <input
@@ -136,7 +184,11 @@ function SortableLinkItem({ link, onDelete, onUpdate }: { link: BioLink; onDelet
           </label>
           <button
             className={styles.transparentBtn}
-            onClick={() => onUpdate(link.id, { isTransparent: !link.isTransparent })}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdate(link.id, { isTransparent: !link.isTransparent });
+            }}
             title={link.isTransparent ? 'Solid background' : 'Transparent background'}
           >
             <i className={link.isTransparent ? 'fas fa-square' : 'fas fa-square-full'}></i>
@@ -171,6 +223,7 @@ export default function DashboardPage() {
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profileImage, setProfileImage] = useState('');
+  const [heroImage, setHeroImage] = useState('');
   const [displayName, setDisplayName] = useState('Your Name');
   const [username, setUsername] = useState('yourname');
   const [bio, setBio] = useState('Add your bio here');
@@ -233,8 +286,6 @@ export default function DashboardPage() {
   const [usernameColor, setUsernameColor] = useState('#1a1a1a');
   const [bioColor, setBioColor] = useState('#6b7280');
   const [customTextColor, setCustomTextColor] = useState('#4b5563');
-  const [showUsernameColorPicker, setShowUsernameColorPicker] = useState(false);
-  const [showBioColorPicker, setShowBioColorPicker] = useState(false);
 
   // Video refs for Safari compatibility
   const pageVideoRef = useRef<HTMLVideoElement>(null);
@@ -295,6 +346,7 @@ export default function DashboardPage() {
           setUsername(user.username || 'yourname');
           setBio(user.bio || 'Add your bio here');
           setProfileImage(user.profileImage || '');
+          setHeroImage(user.heroImage || '');
           setIsPublished(user.isPublished || false);
           setSelectedTemplate(user.template || 'default');
           setCustomText(user.customText || '');
@@ -644,6 +696,23 @@ export default function DashboardPage() {
     }
   };
 
+  const handleHeroImageUpload = (fileUrl: string) => {
+    setHeroImage(fileUrl);
+    
+    // Save to database
+    try {
+      fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heroImage: fileUrl }),
+      });
+      showToast('Hero image updated successfully! 🎨', 'success');
+    } catch (error) {
+      console.error('Error saving hero image:', error);
+      showToast('Failed to update hero image', 'error');
+    }
+  };
+
   // Add Link Section handlers (changed from modal to inline)
   const openAddLinkSection = () => {
     setActiveSection('addLink');
@@ -842,6 +911,12 @@ export default function DashboardPage() {
       description: 'Teal to blue gradient with elegant link cards',
       preview: '/imgs/template2.png',
     },
+    {
+      id: 'template3',
+      name: 'Influencer Hero',
+      description: 'Modern hero image with grid-based link cards',
+      preview: '/imgs/screen.png',
+    },
   ];
 
   const openTemplatesSection = () => {
@@ -974,7 +1049,11 @@ export default function DashboardPage() {
           )}
 
           <div 
-            className={`${styles.phoneMockup} ${selectedTemplate === 'template1' ? styles.template1 : selectedTemplate === 'template2' ? styles.template2 : ''}`}
+            className={`${styles.phoneMockup} ${
+              selectedTemplate === 'template1' ? styles.template1 : 
+              selectedTemplate === 'template2' ? styles.template2 :
+              selectedTemplate === 'template3' ? styles.template3 : ''
+            }`}
             style={{
               backgroundColor: cardBackgroundColor,
               backgroundImage: cardBackgroundImage ? `url(${cardBackgroundImage})` : 'none',
@@ -984,6 +1063,32 @@ export default function DashboardPage() {
               position: 'relative',
             }}
           >
+            {/* Hero Image Section - Template 3 Only */}
+            {selectedTemplate === 'template3' && (
+              <div className={styles.heroImageWrapper} style={{ position: 'relative' }}>
+                {heroImage ? (
+                  <img src={heroImage} alt="Hero banner" className={styles.heroImage} />
+                ) : (
+                  <div style={{ width: '100%', height: '300px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px' }}>
+                    Click + icon below to add hero image
+                  </div>
+                )}
+                <div className={styles.heroGradient}></div>
+                
+                {/* Hero Image Upload Button */}
+                <FileUpload
+                  onUploadComplete={handleHeroImageUpload}
+                  uploadType="hero"
+                  currentImage={heroImage}
+                  hideButton={true}
+                  showPreview={false}
+                  ref={(ref) => {
+                    // Store this ref if needed
+                  }}
+                />
+              </div>
+            )}
+
             {/* Card Background Video */}
             {cardBackgroundVideo && (
               <video
@@ -1039,136 +1144,150 @@ export default function DashboardPage() {
 
               <div className={styles.nameWrapper}>
                 {isEditingName ? (
-                  <input
-                    type="text"
-                    className={styles.editNameInput}
-                    value={tempName}
-                    onChange={(e) => setTempName(e.target.value)}
-                    onBlur={handleNameSave}
-                    onKeyDown={handleNameKeyPress}
-                    autoFocus
-                    maxLength={50}
-                    style={{ color: usernameColor }}
-                  />
-                ) : (
-                  <div 
-                    className={styles.textEditGroup}
-                    onMouseEnter={() => setShowUsernameColorPicker(true)}
-                    onMouseLeave={() => setShowUsernameColorPicker(false)}
-                  >
-                    <h2 
-                      className={styles.profileName}
-                      onClick={handleNameClick}
-                      title="Click to edit name"
+                  <div className={styles.editWithColorWrapper}>
+                    <input
+                      type="text"
+                      className={styles.editNameInput}
+                      value={tempName}
+                      onChange={(e) => setTempName(e.target.value)}
+                      onBlur={handleNameSave}
+                      onKeyDown={handleNameKeyPress}
+                      autoFocus
+                      maxLength={50}
                       style={{ color: usernameColor }}
+                    />
+                    <div 
+                      className={styles.textColorControls}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent blur on input
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {displayName}
-                    </h2>
-                    {showUsernameColorPicker && (
-                      <div className={styles.textColorControls}>
-                        <label className={styles.colorControlLabel}>
-                          <i className="fas fa-palette"></i>
-                          <input
-                            type="color"
-                            value={usernameColor}
-                            onChange={async (e) => {
-                              const color = e.target.value;
-                              setUsernameColor(color);
-                              await fetch('/api/user/profile', {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ usernameColor: color }),
-                              });
-                            }}
-                            className={styles.colorPicker}
-                            title="Change username color"
-                          />
-                        </label>
-                      </div>
-                    )}
+                      <label className={styles.colorControlLabel}>
+                        <i className="fas fa-palette"></i>
+                        <input
+                          type="color"
+                          value={usernameColor}
+                          onChange={async (e) => {
+                            const color = e.target.value;
+                            setUsernameColor(color);
+                            await fetch('/api/user/profile', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ usernameColor: color }),
+                            });
+                          }}
+                          className={styles.colorPicker}
+                          title="Change username color"
+                        />
+                      </label>
+                    </div>
                   </div>
+                ) : (
+                  <h2 
+                    className={styles.profileName}
+                    onClick={handleNameClick}
+                    title="Click to edit name"
+                    style={{ color: usernameColor }}
+                  >
+                    {displayName}
+                    {selectedTemplate === 'template3' && (
+                      <span className={styles.verifiedBadge}>
+                        <i className="fas fa-check"></i>
+                      </span>
+                    )}
+                  </h2>
                 )}
               </div>
+
+              {/* @username handle - Template 3 Only */}
+              {selectedTemplate === 'template3' && publishUsername && (
+                <div className={styles.usernameHandle}>
+                  @{publishUsername}
+                </div>
+              )}
+
+              {/* Social Icons - Moved before bio */}
+              {socialLinks.length > 0 && (
+                <div className={styles.socialIconsContainer}>
+                  {socialLinks.map((social) => (
+                    <div key={social.id} className={styles.socialIconWrapper}>
+                      <a 
+                        href={social.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className={styles.socialIcon}
+                        title={social.platform}
+                      >
+                        <i className={social.icon}></i>
+                      </a>
+                      <button 
+                        className={styles.deleteSocialBtn}
+                        onClick={() => deleteSocialLink(social.id)}
+                        title="Remove social link"
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className={styles.bioWrapper}>
                 {isEditingBio ? (
-                  <textarea
-                    className={styles.editBioInput}
-                    value={tempBio}
-                    onChange={(e) => setTempBio(e.target.value)}
-                    onBlur={handleBioSave}
-                    onKeyDown={handleBioKeyPress}
-                    autoFocus
-                    maxLength={150}
-                    rows={3}
-                    style={{ color: bioColor }}
-                  />
-                ) : (
-                  <div 
-                    className={styles.textEditGroup}
-                    onMouseEnter={() => setShowBioColorPicker(true)}
-                    onMouseLeave={() => setShowBioColorPicker(false)}
-                  >
-                    <p 
-                      className={styles.profileBio}
-                      onClick={handleBioClick}
-                      title="Click to edit bio"
+                  <div className={styles.editWithColorWrapper}>
+                    <textarea
+                      className={styles.editBioInput}
+                      value={tempBio}
+                      onChange={(e) => setTempBio(e.target.value)}
+                      onBlur={handleBioSave}
+                      onKeyDown={handleBioKeyPress}
+                      autoFocus
+                      maxLength={150}
+                      rows={3}
                       style={{ color: bioColor }}
+                    />
+                    <div 
+                      className={styles.textColorControls}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent blur on textarea
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {bio}
-                    </p>
-                    {showBioColorPicker && (
-                      <div className={styles.textColorControls}>
-                        <label className={styles.colorControlLabel}>
-                          <i className="fas fa-palette"></i>
-                          <input
-                            type="color"
-                            value={bioColor}
-                            onChange={async (e) => {
-                              const color = e.target.value;
-                              setBioColor(color);
-                              await fetch('/api/user/profile', {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ bioColor: color }),
-                              });
-                            }}
-                            className={styles.colorPicker}
-                            title="Change bio color"
-                          />
-                        </label>
-                      </div>
-                    )}
+                      <label className={styles.colorControlLabel}>
+                        <i className="fas fa-palette"></i>
+                        <input
+                          type="color"
+                          value={bioColor}
+                          onChange={async (e) => {
+                            const color = e.target.value;
+                            setBioColor(color);
+                            await fetch('/api/user/profile', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ bioColor: color }),
+                            });
+                          }}
+                          className={styles.colorPicker}
+                          title="Change bio color"
+                        />
+                      </label>
+                    </div>
                   </div>
+                ) : (
+                  <p 
+                    className={styles.profileBio}
+                    onClick={handleBioClick}
+                    title="Click to edit bio"
+                    style={{ color: bioColor }}
+                  >
+                    {bio}
+                  </p>
                 )}
               </div>
             </div>
-
-            {/* Social Icons */}
-            {socialLinks.length > 0 && (
-              <div className={styles.socialIconsContainer}>
-                {socialLinks.map((social) => (
-                  <div key={social.id} className={styles.socialIconWrapper}>
-                    <a 
-                      href={social.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className={styles.socialIcon}
-                      title={social.platform}
-                    >
-                      <i className={social.icon}></i>
-                    </a>
-                    <button 
-                      className={styles.deleteSocialBtn}
-                      onClick={() => deleteSocialLink(social.id)}
-                      title="Remove social link"
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
 
             {/* Bio Links */}
             <div className={styles.bioLinksContainer}>
@@ -1197,6 +1316,7 @@ export default function DashboardPage() {
                         link={link} 
                         onDelete={deleteLink}
                         onUpdate={updateLink}
+                        selectedTemplate={selectedTemplate}
                       />
                     ))}
                   </SortableContext>
@@ -1292,6 +1412,52 @@ export default function DashboardPage() {
             <div className={styles.actionButtonWrapper}>
               {showEditMenu && (
                 <div className={styles.dropupMenu}>
+                  {/* Hero Image - Only for Template 3 */}
+                  {selectedTemplate === 'template3' && (
+                    <button className={styles.dropupItem}>
+                      <label htmlFor="heroImageUpload" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: '100%' }}>
+                        <i className="fas fa-image"></i>
+                        <span>Hero Banner Image</span>
+                      </label>
+                      <input
+                        id="heroImageUpload"
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              setIsUploadingBackground(true);
+                              
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              
+                              const uploadResponse = await fetch('/api/upload?type=hero', {
+                                method: 'POST',
+                                body: formData,
+                              });
+                              
+                              if (!uploadResponse.ok) {
+                                showToast('Failed to upload hero image', 'error');
+                                return;
+                              }
+                              
+                              const { fileUrl } = await uploadResponse.json();
+                              handleHeroImageUpload(fileUrl);
+                            } catch (error) {
+                              console.error('Error uploading hero image:', error);
+                              showToast('Failed to upload hero image', 'error');
+                            } finally {
+                              setIsUploadingBackground(false);
+                            }
+                          }
+                          setShowEditMenu(false);
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                    </button>
+                  )}
+
                   <button className={styles.dropupItem}>
                     <label htmlFor="backgroundImageUpload" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: '100%' }}>
                       <i className="fas fa-image"></i>
@@ -1907,15 +2073,27 @@ export default function DashboardPage() {
                                <div className={styles.previewButtonBold}></div>
                                <div className={styles.previewButtonBold}></div>
                              </div>
-                           ) : template.id === 'template2' ? (
-                             <div className={styles.templatePreviewOcean}>
-                               <div className={styles.previewCircle}></div>
-                               <div className={styles.previewLine}></div>
-                               <div className={styles.previewLine}></div>
-                               <div className={styles.previewButtonOcean}></div>
-                               <div className={styles.previewButtonOcean}></div>
-                             </div>
-                           ) : null}
+                          ) : template.id === 'template2' ? (
+                            <div className={styles.templatePreviewOcean}>
+                              <div className={styles.previewCircle}></div>
+                              <div className={styles.previewLine}></div>
+                              <div className={styles.previewLine}></div>
+                              <div className={styles.previewButtonOcean}></div>
+                              <div className={styles.previewButtonOcean}></div>
+                            </div>
+                          ) : template.id === 'template3' ? (
+                            <div className={styles.templatePreviewHero}>
+                              <div className={styles.previewHeroImage}></div>
+                              <div className={styles.previewCircle}></div>
+                              <div className={styles.previewLine}></div>
+                              <div className={styles.previewGridCards}>
+                                <div className={styles.previewGridCard}></div>
+                                <div className={styles.previewGridCard}></div>
+                                <div className={styles.previewGridCard}></div>
+                                <div className={styles.previewGridCard}></div>
+                              </div>
+                            </div>
+                          ) : null}
                          </div>
 
                          <div className={styles.templateInfo}>

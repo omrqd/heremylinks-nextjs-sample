@@ -32,6 +32,7 @@ const features = [
 ];
 
 export default function FeaturesSlider() {
+  
   const sliderRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDown, setIsDown] = useState(false);
@@ -109,7 +110,7 @@ export default function FeaturesSlider() {
   const handleMouseDown = (e: React.MouseEvent) => {
     const slider = sliderRef.current;
     if (!slider) return;
-
+    
     setIsDown(true);
     setIsUserInteracting(true);
     setStartX(e.pageX - slider.offsetLeft);

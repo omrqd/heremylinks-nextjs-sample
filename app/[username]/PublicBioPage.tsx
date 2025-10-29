@@ -9,6 +9,7 @@ interface User {
   name: string;
   bio: string;
   profileImage: string;
+  heroImage: string;
   themeColor: string;
   backgroundColor: string;
   template: string;
@@ -144,7 +145,11 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
       )}
 
       <div 
-        className={`${styles.bioCard} ${user.template === 'template1' ? styles.template1 : user.template === 'template2' ? styles.template2 : ''}`}
+        className={`${styles.bioCard} ${
+          user.template === 'template1' ? styles.template1 : 
+          user.template === 'template2' ? styles.template2 : 
+          user.template === 'template3' ? styles.template3 : ''
+        }`}
         style={{
           backgroundColor: user.cardBackgroundColor,
           backgroundImage: user.cardBackgroundImage ? `url(${user.cardBackgroundImage})` : 'none',
@@ -153,6 +158,18 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
           backgroundRepeat: 'no-repeat',
         }}
       >
+        {/* Hero Image Section - Template 3 Only */}
+        {user.template === 'template3' && (
+          <div className={styles.heroImageWrapper}>
+            {user.heroImage ? (
+              <img src={user.heroImage} alt="Hero banner" className={styles.heroImage} />
+            ) : (
+              <div style={{ width: '100%', height: '300px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}></div>
+            )}
+            <div className={styles.heroGradient}></div>
+          </div>
+        )}
+
         {/* Card Background Video */}
         {user.cardBackgroundVideo && (
           <video
@@ -191,28 +208,46 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
             )}
           </div>
 
-          <h1 className={styles.profileName} style={{ color: user.usernameColor }}>{user.name}</h1>
+          <h1 className={styles.profileName} style={{ color: user.usernameColor }}>
+            {user.name}
+            {user.template === 'template3' && (
+              <span className={styles.verifiedBadge}>
+                <i className="fas fa-check"></i>
+              </span>
+            )}
+          </h1>
+          
+          {/* @username handle - Template 3 Only */}
+          {user.template === 'template3' && (
+            <div className={styles.usernameHandle}>
+              @{user.username}
+            </div>
+          )}
+
+          {/* Social Icons - Moved before bio */}
+          {socials.length > 0 && (
+            <div className={styles.socialIconsContainer}>
+              {socials.map((social) => (
+                <a
+                  key={social.id}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.socialIcon}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLinkClick(social.id, social.url);
+                  }}
+                  title={social.platform}
+                >
+                  <i className={social.icon}></i>
+                </a>
+              ))}
+            </div>
+          )}
+          
           {user.bio && <p className={styles.profileBio} style={{ color: user.bioColor }}>{user.bio}</p>}
         </div>
-
-        {/* Social Icons */}
-        {socials.length > 0 && (
-          <div className={styles.socialIconsContainer}>
-            {socials.map((social) => (
-              <a
-                key={social.id}
-                href={social.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.socialIcon}
-                style={{ background: user.themeColor }}
-                title={social.platform}
-              >
-                <i className={social.icon}></i>
-              </a>
-            ))}
-          </div>
-        )}
 
         {/* Links Section */}
         <div className={styles.linksSection}>
@@ -227,48 +262,70 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
                 ? styles[`layout${link.layout.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}`]
                 : styles.layoutSimple;
 
+              const isTemplate3 = user.template === 'template3';
+              const hasImageBackground = isTemplate3 && link.image;
+
               const linkStyle = {
                 backgroundColor: link.isTransparent ? 'transparent' : (link.backgroundColor || '#ffffff'),
                 borderColor: link.isTransparent ? 'rgba(255, 255, 255, 0.3)' : user.themeColor,
                 border: link.isTransparent ? '2px solid rgba(255, 255, 255, 0.3)' : `2px solid ${user.themeColor}`,
+                // For template3, apply image as background
+                ...(hasImageBackground && {
+                  backgroundImage: `url(${link.image})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                }),
               };
 
               return (
                 <button
                   key={link.id}
-                  className={`${styles.bioLink} ${layoutClass}`}
+                  className={`${styles.bioLink} ${layoutClass} ${hasImageBackground ? styles.hasImage : ''}`}
                   onClick={() => handleLinkClick(link.id, link.url)}
                   style={linkStyle}
                 >
-                  {/* Image Left Layout */}
-                  {link.image && link.layout === 'image-left' && (
-                    <div className={styles.linkImageLeft}>
-                      <img src={link.image} alt={link.title} />
-                    </div>
+                  {/* Template3: Render icon badge in top-right and title in bottom-left */}
+                  {isTemplate3 && hasImageBackground ? (
+                    <>
+                      {link.icon && (
+                        <i className={`${link.icon} ${styles.linkIcon}`}></i>
+                      )}
+                      <span className={styles.linkTitle}>{link.title}</span>
+                    </>
+                  ) : (
+                    <>
+                      {/* Image Left Layout */}
+                      {link.image && link.layout === 'image-left' && (
+                        <div className={styles.linkImageLeft}>
+                          <img src={link.image} alt={link.title} />
+                        </div>
+                      )}
+
+                      {/* Image Top Layouts */}
+                      {link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
+                        <div className={styles.linkImageTop}>
+                          <img src={link.image} alt={link.title} />
+                        </div>
+                      )}
+
+                      <div className={styles.linkContent}>
+                        {link.icon && !link.image && (
+                          <i className={`${link.icon} ${styles.linkIcon}`} style={{ color: link.textColor || user.themeColor }}></i>
+                        )}
+                        <span className={styles.linkTitle} style={{ color: link.textColor || '#1a1a1a' }}>{link.title}</span>
+                      </div>
+
+                      {/* Image Right Layout */}
+                      {link.image && link.layout === 'image-right' && (
+                        <div className={styles.linkImageRight}>
+                          <img src={link.image} alt={link.title} />
+                        </div>
+                      )}
+
+                      <i className="fas fa-arrow-right" style={{ color: user.themeColor }}></i>
+                    </>
                   )}
-
-                  {/* Image Top Layouts */}
-                  {link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
-                    <div className={styles.linkImageTop}>
-                      <img src={link.image} alt={link.title} />
-                    </div>
-                  )}
-
-                  <div className={styles.linkContent}>
-                    {link.icon && !link.image && (
-                      <i className={`${link.icon} ${styles.linkIcon}`} style={{ color: link.textColor || user.themeColor }}></i>
-                    )}
-                    <span className={styles.linkTitle} style={{ color: link.textColor || '#1a1a1a' }}>{link.title}</span>
-                  </div>
-
-                  {/* Image Right Layout */}
-                  {link.image && link.layout === 'image-right' && (
-                    <div className={styles.linkImageRight}>
-                      <img src={link.image} alt={link.title} />
-                    </div>
-                  )}
-
-                  <i className="fas fa-arrow-right" style={{ color: user.themeColor }}></i>
                 </button>
               );
             })

@@ -9,6 +9,7 @@ interface User extends RowDataPacket {
   name: string | null;
   bio: string | null;
   profile_image: string | null;
+  hero_image: string | null;
   theme_color: string | null;
   background_color: string | null;
   template: string | null;
@@ -47,7 +48,7 @@ interface SocialLink extends RowDataPacket {
 async function getUserByUsername(username: string) {
   try {
     const [rows] = await db.query<User[]>(
-      `SELECT id, username, name, bio, profile_image, theme_color, background_color, template, 
+      `SELECT id, username, name, bio, profile_image, hero_image, theme_color, background_color, template, 
               background_image, background_video, card_background_color, card_background_image,
               card_background_video, custom_text, username_color, bio_color, custom_text_color, is_published
        FROM users WHERE LOWER(username) = LOWER(?) AND is_published = TRUE LIMIT 1`,
@@ -123,6 +124,7 @@ export default async function UsernamePage({ params }: { params: { username: str
         name: user.name || user.username,
         bio: user.bio || '',
         profileImage: user.profile_image || '',
+        heroImage: user.hero_image || '',
         themeColor: user.theme_color || '#667eea',
         backgroundColor: user.background_color || '#ffffff',
         template: user.template || 'default',

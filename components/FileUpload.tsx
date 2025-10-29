@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 interface FileUploadProps {
   onUploadComplete: (fileUrl: string) => void;
-  uploadType: 'profile' | 'link';
+  uploadType: 'profile' | 'link' | 'hero';
   className?: string;
   currentImage?: string;
   buttonText?: string;

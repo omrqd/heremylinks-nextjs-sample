@@ -732,3 +732,214 @@
         font-size: 14px;
     }
 }
+
+/* ==================== TEMPLATE 3 STYLES (Influencer/Modern Hero) ==================== */
+.publicBioContainer:has(.bioCard.template3) {
+    background: #0A0A0A;
+}
+
+.bioCard.template3 {
+    padding: 0;
+}
+
+/* Hero Image Section */
+.bioCard.template3 .heroImageWrapper {
+    position: relative;
+    width: 100%;
+    border-radius: 40px 40px 0 0;
+    overflow: hidden;
+}
+
+.bioCard.template3 .heroImage {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
+.bioCard.template3 .heroGradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(10, 10, 10, 1) 0%, rgba(10, 10, 10, 0.7) 40%, transparent 100%);
+    pointer-events: none;
+}
+
+/* Profile Section - Overlaid on hero image */
+.bioCard.template3 .profileSection {
+    margin-top: -128px;
+    padding: 0 16px 24px;
+    z-index: 10;
+}
+
+.bioCard.template3 .profileName {
+    font-size: 32px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+/* Verified Badge */
+.bioCard.template3 .verifiedBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #4F46E5;
+    border-radius: 50%;
+    color: white;
+    font-size: 14px;
+}
+
+/* Username Handle (@username) */
+.bioCard.template3 .usernameHandle {
+    font-size: 16px;
+    color: #9ca3af;
+    margin: 0 0 16px 0;
+    font-weight: 400;
+    text-align: center;
+}
+
+/* Social Icons Row */
+.bioCard.template3 .socialIconsContainer {
+    gap: 8px;
+    padding: 0 0 20px 0;
+    margin: 0 0 20px 0;
+}
+
+.bioCard.template3 .socialIcon {
+    width: 40px;
+    height: 40px;
+    box-shadow: none;
+}
+
+/* Bio Text */
+.bioCard.template3 .profileBio {
+    font-size: 16px;
+    color: #e5e7eb;
+    max-width: 350px;
+    line-height: 1.6;
+}
+
+/* Links Section - 2-column grid */
+.bioCard.template3 .linksSection {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 0 16px 32px;
+}
+
+/* Image-based Link Cards */
+.bioCard.template3 .bioLink {
+    border-radius: 24px;
+    padding: 0;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    overflow: hidden;
+    min-height: auto;
+    border: none;
+}
+
+.bioCard.template3 .bioLink.hasImage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+    z-index: 1;
+}
+
+.bioCard.template3 .bioLink:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Link Icon Badge (top-right) */
+.bioCard.template3 .bioLink.hasImage .linkIcon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    z-index: 3;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+/* Link Title (bottom-left) */
+.bioCard.template3 .bioLink.hasImage .linkTitle {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    z-index: 3;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Links without images - full width list style */
+.bioCard.template3 .bioLink:not(.hasImage) {
+    grid-column: span 2;
+    aspect-ratio: auto;
+    min-height: 60px;
+    background: #000000 !important;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+}
+
+.bioCard.template3 .bioLink:not(.hasImage) .linkTitle {
+    color: #ffffff !important;
+}
+
+.bioCard.template3 .bioLink:not(.hasImage) .linkIcon {
+    color: #ffffff !important;
+}
+
+/* Custom Text */
+.bioCard.template3 .customTextSection {
+    background: transparent;
+    padding: 24px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bioCard.template3 .customText {
+    color: #e5e7eb;
+    font-size: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .bioCard.template3 .profileSection {
+        margin-top: -100px;
+    }
+
+    .bioCard.template3 .profileName {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 480px) {
+    .bioCard.template3 .profileSection {
+        margin-top: -80px;
+    }
+
+    .bioCard.template3 .profileName {
+        font-size: 24px;
+    }
+
+    .bioCard.template3 .linksSection {
+        padding: 0 12px 24px;
+        gap: 12px;
+    }
+}

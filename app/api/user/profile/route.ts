@@ -10,6 +10,7 @@ interface User extends RowDataPacket {
   name: string | null;
   bio: string | null;
   profile_image: string | null;
+  hero_image: string | null;
   theme_color: string | null;
   background_color: string | null;
   template: string | null;
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [rows] = await db.query<User[]>(
-      `SELECT id, username, email, name, bio, profile_image, theme_color, background_color, template, 
+      `SELECT id, username, email, name, bio, profile_image, hero_image, theme_color, background_color, template, 
               background_image, background_video, card_background_color, card_background_image, 
               card_background_video, custom_text, username_color, bio_color, custom_text_color, is_published 
        FROM users WHERE email = ? LIMIT 1`,
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
         name: user.name,
         bio: user.bio,
         profileImage: user.profile_image,
+        heroImage: user.hero_image,
         themeColor: user.theme_color,
         backgroundColor: user.background_color,
         template: user.template || 'default',
@@ -94,6 +96,7 @@ export async function PATCH(request: NextRequest) {
       name,
       bio,
       profileImage,
+      heroImage,
       themeColor,
       backgroundColor,
       template,
@@ -159,6 +162,10 @@ export async function PATCH(request: NextRequest) {
     if (profileImage !== undefined) {
       updates.push('profile_image = ?');
       values.push(profileImage);
+    }
+    if (heroImage !== undefined) {
+      updates.push('hero_image = ?');
+      values.push(heroImage);
     }
     if (themeColor !== undefined) {
       updates.push('theme_color = ?');
