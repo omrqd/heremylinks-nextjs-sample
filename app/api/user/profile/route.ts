@@ -52,6 +52,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Compute template-aware defaults
+    const effectiveTemplate = user.template || 'default';
+    const defaultUsernameColor =
+      user.username_color || (effectiveTemplate === 'template3' ? '#ffffff' : '#1a1a1a');
+    const defaultCustomTextColor =
+      user.custom_text_color || (effectiveTemplate === 'template3' ? '#ffffff' : '#4b5563');
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -65,16 +72,16 @@ export async function GET(request: NextRequest) {
         hideProfilePicture: user.hide_profile_picture || false,
         themeColor: user.theme_color,
         backgroundColor: user.background_color,
-        template: user.template || 'default',
+        template: effectiveTemplate,
         backgroundImage: user.background_image,
         backgroundVideo: user.background_video,
         cardBackgroundColor: user.card_background_color || '#ffffff',
         cardBackgroundImage: user.card_background_image,
         cardBackgroundVideo: user.card_background_video,
         customText: user.custom_text,
-        usernameColor: user.username_color || '#1a1a1a',
+        usernameColor: defaultUsernameColor,
         bioColor: user.bio_color || '#6b7280',
-        customTextColor: user.custom_text_color || '#4b5563',
+        customTextColor: defaultCustomTextColor,
         isPublished: user.is_published,
       },
     });
@@ -150,6 +157,13 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // Fetch current user to check existing background settings
+    const [currentRows] = await db.query<User[]>(
+      `SELECT id, background_image FROM users WHERE email = ? LIMIT 1`,
+      [session.user.email]
+    );
+    const currentUser = currentRows[0];
+
     // Build dynamic update query
     const updates: string[] = [];
     const values: any[] = [];
@@ -193,6 +207,27 @@ export async function PATCH(request: NextRequest) {
     if (template !== undefined) {
       updates.push('template = ?');
       values.push(template);
+      // When switching to Influencer Hero (template3), set default colors to white
+      // unless explicit colors are provided in this PATCH body.
+      if (template === 'template3') {
+        if (usernameColor === undefined) {
+          updates.push('username_color = ?');
+          values.push('#ffffff');
+        }
+        if (customTextColor === undefined) {
+          updates.push('custom_text_color = ?');
+          values.push('#ffffff');
+        }
+        // Set a default page background image for fresh users if none exists
+        // Only apply if caller did not explicitly set backgroundImage in this PATCH
+        if (backgroundImage === undefined) {
+          const hasExistingBackground = Boolean(currentUser?.background_image);
+          if (!hasExistingBackground) {
+            updates.push('background_image = ?');
+            values.push('/imgs/blackbg.jpg');
+          }
+        }
+      }
     }
     if (backgroundImage !== undefined) {
       updates.push('background_image = ?');

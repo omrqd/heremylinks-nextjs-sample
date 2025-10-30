@@ -32,6 +32,7 @@ import Link from 'next/link';
 import { useToast } from '@/components/ToastProvider';
 import Sidebar from './components/Sidebar';
 import FirstLinkSetup from './components/FirstLinkSetup';
+import TemplateChoice from './components/TemplateChoice';
 
 interface BioLink {
   id: string;
@@ -255,6 +256,7 @@ export default function DashboardPage() {
   const [showEditMenu, setShowEditMenu] = useState(false);
   const [showLinkTypeModal, setShowLinkTypeModal] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [showSocialIconsModal, setShowSocialIconsModal] = useState(false);
   
   // Publish modal states
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -310,7 +312,7 @@ export default function DashboardPage() {
   const [cropUploadType, setCropUploadType] = useState<'hero' | 'background' | 'card-background'>('hero');
 
   // Text color states
-  const [usernameColor, setUsernameColor] = useState('#1a1a1a');
+  const [usernameColor, setUsernameColor] = useState(selectedTemplate === 'template3' ? '#ffffff' : '#1a1a1a');
   const [bioColor, setBioColor] = useState('#6b7280');
   const [customTextColor, setCustomTextColor] = useState('#4b5563');
 
@@ -321,6 +323,7 @@ export default function DashboardPage() {
   // First-time user setup states
   const [showFirstLinkSetup, setShowFirstLinkSetup] = useState(false);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+  const [showTemplateChoice, setShowTemplateChoice] = useState(false);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -338,6 +341,7 @@ export default function DashboardPage() {
     setIsPublished(true);
     setShowFirstLinkSetup(false);
     setIsFirstTimeUser(false);
+    setShowTemplateChoice(true);
     showToast('Welcome! Your profile is now live! 🎉', 'success');
   };
 
@@ -401,7 +405,9 @@ export default function DashboardPage() {
           setCardBackgroundColor(user.cardBackgroundColor || '#ffffff');
           setCardBackgroundImage(user.cardBackgroundImage || '');
           setCardBackgroundVideo(user.cardBackgroundVideo || '');
-          setUsernameColor(user.usernameColor || '#1a1a1a');
+          setUsernameColor(
+            user.usernameColor || ((user.template || 'template3') === 'template3' ? '#ffffff' : '#1a1a1a')
+          );
           setBioColor(user.bioColor || '#6b7280');
           setCustomTextColor(user.customTextColor || '#4b5563');
           
@@ -1028,14 +1034,14 @@ export default function DashboardPage() {
   ];
 
   const openSocialsSection = () => {
-    setActiveSection('socials');
+    setShowSocialIconsModal(true);
     setSocialsStep('platforms');
     setSelectedPlatform(null);
     setSocialUrl('');
   };
 
   const closeSocialsSection = () => {
-    setActiveSection('none');
+    setShowSocialIconsModal(false);
     setSocialsStep('platforms');
     setSelectedPlatform(null);
     setSocialUrl('');
@@ -1086,8 +1092,6 @@ export default function DashboardPage() {
   };
 
   const deleteSocialLink = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this social link?')) return;
-
     try {
       const response = await fetch(`/api/socials/${id}`, {
         method: 'DELETE',
@@ -1095,7 +1099,7 @@ export default function DashboardPage() {
 
       if (response.ok) {
         setSocialLinks(socialLinks.filter(social => social.id !== id));
-        showToast('Social link deleted successfully', 'success');
+        showToast('Social link removed', 'success');
       } else {
         showToast('Failed to delete social link', 'error');
       }
@@ -1135,6 +1139,12 @@ export default function DashboardPage() {
 
   const openTemplatesSection = () => {
     setActiveSection('templates');
+  };
+
+  // Open Templates modal (Tools → Templates)
+  const openTemplatesModal = () => {
+    setActiveSection('none');
+    setShowTemplateChoice(true);
   };
 
   const closeTemplatesSection = () => {
@@ -1301,7 +1311,7 @@ export default function DashboardPage() {
                     <button 
                       className={styles.dropdownItem}
                       onClick={() => {
-                        openTemplatesSection();
+                        openTemplatesModal();
                         setShowToolsDropdown(false);
                       }}
                     >
@@ -1330,11 +1340,11 @@ export default function DashboardPage() {
 
           {/* Action Buttons */}
           <div className={styles.topBarActions}>
-            <button 
+          <button 
               className={styles.actionButton}
               onClick={openAddLinkSection}
               title="Add new item"
-            >
+          >
               <i className="fas fa-plus"></i>
           </button>
             
@@ -1460,7 +1470,11 @@ export default function DashboardPage() {
                               const reader = new FileReader();
                               reader.onload = () => {
                                 setImageToCrop(reader.result as string);
-                                setCropAspectRatio(null);
+                                // Calculate aspect ratio based on phone mockup dimensions
+                                // Phone mockup width: 480px, padding: 30px each side = 420px content width
+                                const phoneMockupContentWidth = 420;
+                                const calculatedAspectRatio = phoneMockupContentWidth / heroHeight;
+                                setCropAspectRatio(calculatedAspectRatio);
                                 setCropUploadType('hero');
                                 setShowCropModal(true);
                               };
@@ -1592,6 +1606,18 @@ export default function DashboardPage() {
                         }}
                         style={{ display: 'none' }}
                       />
+                    </button>
+
+                    {/* Toggle Profile Picture Visibility */}
+                    <button 
+                      className={styles.dropdownItem}
+                      onClick={async () => {
+                        await handleToggleProfilePicture();
+                        setShowEditMenu(false);
+                      }}
+                    >
+                      <i className={hideProfilePicture ? "fas fa-user" : "fas fa-user-slash"}></i>
+                      <span>{hideProfilePicture ? 'Show Profile Picture' : 'Hide Profile Picture'}</span>
                     </button>
                   </div>
                 </>
@@ -2960,12 +2986,126 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Social Icons Modal */}
+      {showSocialIconsModal && (
+        <div className={styles.modalOverlay} onClick={closeSocialsSection}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                {socialsStep === 'platforms' ? 'Add Social Icon' : `Add ${selectedPlatform?.name} Link`}
+              </h2>
+              <button 
+                className={styles.modalClose}
+                onClick={closeSocialsSection}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              {socialsStep === 'platforms' ? (
+                <>
+                  <p className={styles.modalDescription}>
+                    Select a social platform to add to your profile
+                  </p>
+                  
+                  <div className={styles.socialPlatformsGrid}>
+                    {socialPlatforms.map((platform) => (
+                      <button
+                        key={platform.name}
+                        className={styles.socialPlatformCard}
+                        onClick={() => selectPlatform(platform)}
+                      >
+                        <div className={styles.socialPlatformIcon}>
+                          <i className={platform.icon}></i>
+                        </div>
+                        <span className={styles.socialPlatformName}>{platform.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={styles.socialInputHeader}>
+                    <button 
+                      className={styles.backButton}
+                      onClick={() => setSocialsStep('platforms')}
+                    >
+                      <i className="fas fa-arrow-left"></i>
+                    </button>
+                    <div className={styles.selectedPlatformDisplay}>
+                      <div className={styles.selectedPlatformIcon}>
+                        <i className={selectedPlatform?.icon}></i>
+                      </div>
+                      <span>{selectedPlatform?.name}</span>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Profile URL <span className={styles.requiredField}>*</span>
+                    </label>
+                    <input
+                      type="url"
+                      className={styles.formInput}
+                      placeholder={`https://www.${selectedPlatform?.name.toLowerCase()}.com/yourprofile`}
+                      value={socialUrl}
+                      onChange={(e) => setSocialUrl(e.target.value)}
+                      autoFocus
+                    />
+                    <p className={styles.inputHint}>
+                      Enter the full URL to your {selectedPlatform?.name} profile
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {socialsStep === 'input' && (
+              <div className={styles.modalFooter}>
+                <button 
+                  className={styles.secondaryBtn}
+                  onClick={closeSocialsSection}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className={styles.primaryBtn}
+                  onClick={handleAddSocial}
+                  disabled={!socialUrl.trim() || isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i> Adding...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-plus"></i> Add Social Icon
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* First Link Setup Modal */}
       {showFirstLinkSetup && (
         <FirstLinkSetup
           isOpen={showFirstLinkSetup}
           onSuccess={handleFirstLinkSetupSuccess}
           onClose={() => setShowFirstLinkSetup(false)}
+        />
+      )}
+
+      {/* Template Choice Modal */}
+      {showTemplateChoice && (
+        <TemplateChoice
+          isOpen={showTemplateChoice}
+          defaultTemplate="template3"
+          onApply={(templateId) => handleTemplateSelect(templateId)}
+          onClose={() => setShowTemplateChoice(false)}
         />
       )}
     </div>

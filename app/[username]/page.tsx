@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import db from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import PublicBioPage from './PublicBioPage';

@@ -1,6 +1,0 @@
-# Ignore all uploaded files
-*
-# But keep the .gitkeep file
-!.gitkeep
-!.gitignore
-

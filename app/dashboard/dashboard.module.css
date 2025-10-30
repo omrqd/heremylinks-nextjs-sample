@@ -46,7 +46,7 @@
     padding: 0 20px;
     border-bottom: 1px solid #2A2A2A;
     margin-bottom: 20px;
-    height: 63px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4828,6 +4828,176 @@
 @media (max-width: 480px) {
     .linkTypeGrid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Social Icons Modal Styles */
+.socialPlatformsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.socialPlatformCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 16px;
+    background: #1A1A1A;
+    border: 2px solid #2A2A2A;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #A0A0A0;
+}
+
+.socialPlatformCard:hover {
+    border-color: #667eea;
+    background: #252525;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+}
+
+.socialPlatformCard:active {
+    transform: translateY(-2px);
+}
+
+.socialPlatformIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.socialPlatformCard:hover .socialPlatformIcon {
+    transform: scale(1.1);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.socialPlatformName {
+    font-size: 14px;
+    font-weight: 500;
+    color: #E0E0E0;
+    text-align: center;
+}
+
+/* Social Input Step */
+.socialInputHeader {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #2A2A2A;
+}
+
+.backButton {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #1A1A1A;
+    border: 1px solid #2A2A2A;
+    color: #A0A0A0;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.backButton:hover {
+    background: #2A2A2A;
+    color: #FFFFFF;
+    border-color: #667eea;
+}
+
+.selectedPlatformDisplay {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.selectedPlatformIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.selectedPlatformDisplay span {
+    font-size: 18px;
+    font-weight: 600;
+    color: #E0E0E0;
+}
+
+.inputHint {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #707070;
+    font-style: italic;
+}
+
+/* Responsive adjustments for social modal */
+@media (max-width: 768px) {
+    .socialPlatformsGrid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .socialPlatformCard {
+        padding: 16px 12px;
+    }
+
+    .socialPlatformIcon {
+        width: 48px;
+        height: 48px;
+        font-size: 24px;
+    }
+
+    .socialPlatformName {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .socialPlatformsGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .socialPlatformCard {
+        padding: 14px 10px;
+    }
+
+    .socialPlatformIcon {
+        width: 44px;
+        height: 44px;
+        font-size: 22px;
+    }
+
+    .selectedPlatformIcon {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+
+    .selectedPlatformDisplay span {
+        font-size: 16px;
     }
 }
 
