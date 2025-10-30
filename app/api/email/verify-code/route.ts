@@ -16,9 +16,9 @@ export async function POST(request: Request) {
        AND verification_code = ? 
        AND verification_code_expires > NOW()`,
       [email, code]
-    );
+    ) as any[];
 
-    if (!users || users.length === 0) {
+    if (!users || !Array.isArray(users) || users.length === 0) {
       return NextResponse.json({ error: 'Invalid or expired verification code' }, { status: 400 });
     }
 

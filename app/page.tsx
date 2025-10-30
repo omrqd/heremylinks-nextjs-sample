@@ -36,20 +36,20 @@ export default function Home() {
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   onBlur={() => setTimeout(() => setShowUserMenu(false), 200)}
                 >
-                  {session.user.image || (session.user as any).profileImage ? (
+                  {session.user?.image || (session.user as any)?.profileImage ? (
                     <Image
-                      src={session.user.image || (session.user as any).profileImage}
-                      alt={session.user.name || 'User'}
+                      src={session.user?.image || (session.user as any)?.profileImage}
+                      alt={session.user?.name || 'User'}
                       width={40}
                       height={40}
                       className={styles.userAvatar}
                     />
                   ) : (
                     <div className={styles.userAvatarPlaceholder}>
-                      {session.user.name?.charAt(0).toUpperCase() || session.user.email?.charAt(0).toUpperCase()}
+                      {session.user?.name?.charAt(0).toUpperCase() || session.user?.email?.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className={styles.userName}>{session.user.name || session.user.email}</span>
+                  <span className={styles.userName}>{session.user?.name || session.user?.email}</span>
                   <svg
                     width="16"
                     height="16"

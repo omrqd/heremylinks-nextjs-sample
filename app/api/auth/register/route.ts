@@ -3,6 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { generateVerificationCode, getVerificationCodeExpiry } from '@/lib/utils';
+import { RowDataPacket } from 'mysql2';
+
+interface User extends RowDataPacket {
+  id: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,12 +23,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const [existingUsers] = await db.query(
+    const [existingUsers] = await db.query<User[]>(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [email]
     );
 
-    if (Array.isArray(existingUsers) && existingUsers.length > 0) {
+    if (existingUsers.length > 0) {
       return NextResponse.json(
         { error: 'User already exists' },
         { status: 400 }
@@ -31,12 +36,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if username is taken
-    const [existingUsername] = await db.query(
+    const [existingUsername] = await db.query<User[]>(
       'SELECT id FROM users WHERE username = ? LIMIT 1',
       [username]
     );
 
-    if (Array.isArray(existingUsername) && existingUsername.length > 0) {
+    if (existingUsername.length > 0) {
       return NextResponse.json(
         { error: 'Username already taken' },
         { status: 400 }
