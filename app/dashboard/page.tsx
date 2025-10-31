@@ -744,23 +744,32 @@ export default function DashboardPage() {
   };
 
   const handleProfileImageUpload = async (fileUrl: string) => {
+    console.log('📤 Uploading new profile image:', fileUrl);
     setProfileImage(fileUrl);
     
     // Save to database
     try {
+      console.log('📡 Sending PATCH request to /api/user/profile...');
       const response = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profileImage: fileUrl }),
       });
       
+      console.log('📡 Response status:', response.status);
+      
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
         throw new Error('Failed to update profile');
       }
       
+      const responseData = await response.json();
+      console.log('✅ API Response:', responseData);
+      
       showToast('Profile image updated successfully', 'success');
     } catch (error) {
-      console.error('Error saving image:', error);
+      console.error('❌ Error saving image:', error);
       showToast('Failed to update profile image', 'error');
     }
   };
