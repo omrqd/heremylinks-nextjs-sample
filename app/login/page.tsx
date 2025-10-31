@@ -8,7 +8,6 @@ import Image from 'next/image';
 import styles from './login.module.css';
 import { useToast } from '@/components/ToastProvider';
 import VerificationForm from './components/VerificationForm';
-import LazyImage from '@/components/LazyImage';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -285,7 +284,7 @@ export default function LoginPage() {
       <div className={styles.loginLeft}>
         <div className={styles.loginContent}>
           <Link href="/" className={styles.logoLink}>
-            <LazyImage src="/imgs/logo.png" alt="HereMyLinks Logo" width={180} height={45} className={styles.logo} />
+            <Image src="/imgs/logo.png" alt="HereMyLinks Logo" width={180} height={45} className={styles.logo} />
           </Link>
           
           <div className={styles.loginFormWrapper}>
@@ -413,7 +412,7 @@ export default function LoginPage() {
       
       {/* Right Side - Image */}
       <div className={styles.loginRight}>
-        <LazyImage src="/imgs/login.jpg" alt="HereMyLinks Platform" fill style={{ objectFit: 'cover' }} priority />
+        <Image src="/imgs/login.jpg" alt="HereMyLinks Platform" fill style={{ objectFit: 'cover' }} priority />
       </div>
     </div>
   );
