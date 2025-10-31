@@ -27,9 +27,9 @@ export default function LoginPage() {
   // Redirect authenticated users to dashboard
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     }
-  }, [status, router]);
+  }, [status]);
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,8 +127,8 @@ export default function LoginPage() {
         return;
       }
       
-      // Redirect to dashboard on successful login
-      router.push('/dashboard');
+      // Redirect to dashboard on successful login using window.location for more reliable redirect
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error verifying email:', error);
       showToast('Failed to verify email. Please try again.', 'error');
@@ -228,9 +228,8 @@ export default function LoginPage() {
         return;
       }
       
-      // Success - redirect to dashboard
-      router.push('/dashboard');
-      router.refresh();
+      // Success - redirect to dashboard using window.location for more reliable redirect
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Authentication error:', error);
       showToast('Authentication failed. Please try again.', 'error');
