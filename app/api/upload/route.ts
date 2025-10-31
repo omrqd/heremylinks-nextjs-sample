@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { validateFileType, validateFileSize, saveUploadedFile, UploadType } from '@/lib/upload';
+import { uploadToR2, UploadType, validateFile } from '@/lib/r2';
 
 // POST handler for file uploads
 export async function POST(req: NextRequest) {
@@ -27,17 +27,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Validate file
-    if (!validateFileSize(file.size)) {
-      return NextResponse.json({ error: 'File size exceeds the 5MB limit' }, { status: 400 });
+    // Validate file (max 10MB for images)
+    try {
+      validateFile(file, 10);
+    } catch (error: any) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    if (!validateFileType(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed' }, { status: 400 });
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ 
+        error: 'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed' 
+      }, { status: 400 });
     }
 
-    // Save the file and get the URL
-    const { fileUrl, fileName } = await saveUploadedFile(file, uploadType);
+    // Upload to R2 and get the URL
+    const { fileUrl, fileName } = await uploadToR2(file, uploadType);
     
     return NextResponse.json({ 
       success: true, 

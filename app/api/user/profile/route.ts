@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import db from '@/lib/db';
-import { deleteUploadedFile } from '@/lib/upload';
+import { deleteFromR2 } from '@/lib/r2';
 import { RowDataPacket } from 'mysql2';
 
 interface User extends RowDataPacket {
@@ -182,27 +182,27 @@ export async function PATCH(request: NextRequest) {
     
     if (profileImage !== undefined && currentUser?.profile_image && profileImage !== currentUser.profile_image) {
       console.log('🗑️  Deleting old profile image:', currentUser.profile_image);
-      await deleteUploadedFile(currentUser.profile_image);
+      await deleteFromR2(currentUser.profile_image);
     }
     if (heroImage !== undefined && currentUser?.hero_image && heroImage !== currentUser.hero_image) {
       console.log('🗑️  Deleting old hero image:', currentUser.hero_image);
-      await deleteUploadedFile(currentUser.hero_image);
+      await deleteFromR2(currentUser.hero_image);
     }
     if (backgroundImage !== undefined && currentUser?.background_image && backgroundImage !== currentUser.background_image) {
       console.log('🗑️  Deleting old background image:', currentUser.background_image);
-      await deleteUploadedFile(currentUser.background_image);
+      await deleteFromR2(currentUser.background_image);
     }
     if (backgroundVideo !== undefined && currentUser?.background_video && backgroundVideo !== currentUser.background_video) {
       console.log('🗑️  Deleting old background video:', currentUser.background_video);
-      await deleteUploadedFile(currentUser.background_video);
+      await deleteFromR2(currentUser.background_video);
     }
     if (cardBackgroundImage !== undefined && currentUser?.card_background_image && cardBackgroundImage !== currentUser.card_background_image) {
       console.log('🗑️  Deleting old card background image:', currentUser.card_background_image);
-      await deleteUploadedFile(currentUser.card_background_image);
+      await deleteFromR2(currentUser.card_background_image);
     }
     if (cardBackgroundVideo !== undefined && currentUser?.card_background_video && cardBackgroundVideo !== currentUser.card_background_video) {
       console.log('🗑️  Deleting old card background video:', currentUser.card_background_video);
-      await deleteUploadedFile(currentUser.card_background_video);
+      await deleteFromR2(currentUser.card_background_video);
     }
 
     // Build dynamic update query
@@ -279,7 +279,7 @@ export async function PATCH(request: NextRequest) {
         values.push('');
         // Delete the old video file
         if (currentUser?.background_video) {
-          await deleteUploadedFile(currentUser.background_video);
+          await deleteFromR2(currentUser.background_video);
         }
       }
     }
@@ -292,7 +292,7 @@ export async function PATCH(request: NextRequest) {
         values.push('');
         // Delete the old image file
         if (currentUser?.background_image) {
-          await deleteUploadedFile(currentUser.background_image);
+          await deleteFromR2(currentUser.background_image);
         }
       }
     }
@@ -309,7 +309,7 @@ export async function PATCH(request: NextRequest) {
         values.push('');
         // Delete the old card video file
         if (currentUser?.card_background_video) {
-          await deleteUploadedFile(currentUser.card_background_video);
+          await deleteFromR2(currentUser.card_background_video);
         }
       }
     }
@@ -322,7 +322,7 @@ export async function PATCH(request: NextRequest) {
         values.push('');
         // Delete the old card image file
         if (currentUser?.card_background_image) {
-          await deleteUploadedFile(currentUser.card_background_image);
+          await deleteFromR2(currentUser.card_background_image);
         }
       }
     }

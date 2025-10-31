@@ -26,6 +26,9 @@ yarn-error.log*
 .env*.local
 .env.production
 
+# uploads (now using Cloudflare R2)
+/public/uploads/
+
 # vercel
 .vercel
 

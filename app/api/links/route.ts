@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import db from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
-import { deleteUploadedFile } from '@/lib/upload';
+import { deleteFromR2 } from '@/lib/r2';
 
 interface BioLink extends RowDataPacket {
   id: string;
@@ -188,7 +188,7 @@ export async function DELETE(request: NextRequest) {
 
     // Delete the associated image file if it exists
     if (link?.image) {
-      await deleteUploadedFile(link.image);
+      await deleteFromR2(link.image);
     }
 
     return NextResponse.json({ success: true });
