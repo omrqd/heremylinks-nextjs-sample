@@ -8,6 +8,7 @@ import styles from './home.module.css';
 import TopBanner from '@/components/TopBanner';
 import FeaturesSlider from '@/components/FeaturesSlider';
 import ScrollAnimation from '@/components/ScrollAnimation';
+import LazyImage from '@/components/LazyImage';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -24,7 +25,7 @@ export default function Home() {
         <TopBanner />
         <div className={styles.navbar}>
           <div className={styles.logo}>
-            <Image src="/imgs/logo.png" alt="HereMyLinks" width={240} height={60} priority />
+            <LazyImage src="/imgs/logo.png" alt="HereMyLinks" width={240} height={60} priority />
           </div>
           <div className={styles.links}>
             {status === 'loading' ? (
@@ -115,7 +116,7 @@ export default function Home() {
           </div>
         </div>
         <div className={styles.heroSectionImage}>
-          <Image src="/imgs/hero-section-image.png" alt="HereMyLinks Platform" width={800} height={600} priority />
+          <LazyImage src="/imgs/hero-section-image.png" alt="HereMyLinks Platform" width={800} height={600} priority />
         </div>
       </div>
 
@@ -210,7 +211,7 @@ export default function Home() {
       <footer className={`${styles.footer} footer`}>
         <div className={styles.footerContainer}>
           <div className={styles.footerLogo}>
-            <Image src="/imgs/logo.png" alt="Logo" width={200} height={50} />
+            <LazyImage src="/imgs/logo.png" alt="Logo" width={200} height={50} />
           </div>
 
           <div className={styles.footerSocial}>

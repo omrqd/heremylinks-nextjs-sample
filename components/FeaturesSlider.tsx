@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import styles from '../app/home.module.css';
+import LazyImage from './LazyImage';
 
 const features = [
   {
@@ -186,7 +187,7 @@ export default function FeaturesSlider() {
                 <h3 className={styles.cardTitle}>{feature.title}</h3>
               </div>
               <div className={styles.cardImage}>
-                <Image
+                <LazyImage
                   src={feature.image}
                   alt={feature.title}
                   width={400}
