@@ -158,13 +158,22 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // Debug: Check what email we're using
+    console.log('🔍 Session email:', session.user.email);
+    
     // Fetch current user to check existing files for deletion
     const [currentRows] = await db.query<User[]>(
-      `SELECT id, profile_image, hero_image, background_image, background_video, 
+      `SELECT id, email, profile_image, hero_image, background_image, background_video, 
               card_background_image, card_background_video FROM users WHERE email = ? LIMIT 1`,
       [session.user.email]
     );
     const currentUser = currentRows[0];
+
+    console.log('🔍 User found in database:', currentUser ? 'YES' : 'NO');
+    if (currentUser) {
+      console.log('🔍 Database email:', currentUser.email);
+      console.log('🔍 User ID:', currentUser.id);
+    }
 
     // Delete old files when replacing them
     console.log('🔍 Checking for files to delete...');
@@ -352,12 +361,21 @@ export async function PATCH(request: NextRequest) {
     console.log('📝 UPDATE Query:', updateQuery);
     console.log('📝 UPDATE Values:', values);
 
-    const [result] = await db.query(
+    const [result]: any = await db.query(
       updateQuery,
       values
     );
 
     console.log('✅ UPDATE Result:', result);
+    
+    if (result.affectedRows === 0) {
+      console.error('❌ ERROR: No user found with email:', session.user.email);
+      console.error('❌ This means the user doesn\'t exist in the database!');
+      return NextResponse.json(
+        { error: 'User not found in database. Please contact support.' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
