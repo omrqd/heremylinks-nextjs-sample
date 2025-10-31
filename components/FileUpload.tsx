@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, forwardRef } from 'react';
-import Image from 'next/image';
 
 interface FileUploadProps {
   onUploadComplete: (fileUrl: string) => void;
@@ -106,11 +105,10 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
     <div className={`file-upload ${className}`}>
       {showPreview && previewUrl && (
         <div className="imagePreview">
-          <Image 
+          <img 
             src={previewUrl} 
             alt="Preview" 
-            fill
-            style={{ objectFit: 'cover' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
           <button 
             onClick={() => {
