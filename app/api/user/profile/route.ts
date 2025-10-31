@@ -348,10 +348,16 @@ export async function PATCH(request: NextRequest) {
     // Add email to values for WHERE clause
     values.push(session.user.email);
 
-    await db.query(
-      `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE email = ?`,
+    const updateQuery = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE email = ?`;
+    console.log('📝 UPDATE Query:', updateQuery);
+    console.log('📝 UPDATE Values:', values);
+
+    const [result] = await db.query(
+      updateQuery,
       values
     );
+
+    console.log('✅ UPDATE Result:', result);
 
     return NextResponse.json({ success: true });
   } catch (error) {
