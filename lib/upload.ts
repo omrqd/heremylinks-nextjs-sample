@@ -74,19 +74,27 @@ export const deleteUploadedFile = async (fileUrl: string | null | undefined): Pr
 
   try {
     // Convert URL to filesystem path
-    const filePath = path.join(process.cwd(), 'public', fileUrl);
+    // Remove leading slash to avoid path.join treating it as absolute
+    const relativePath = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl;
+    const filePath = path.join(process.cwd(), 'public', relativePath);
+    
+    console.log(`Attempting to delete file: ${filePath}`);
     
     // Check if file exists before attempting to delete
     try {
       await fs.access(filePath);
       await fs.unlink(filePath);
-      console.log(`Deleted old file: ${fileUrl}`);
-    } catch (error) {
+      console.log(`✅ Successfully deleted old file: ${fileUrl}`);
+    } catch (error: any) {
       // File doesn't exist, which is fine
-      console.log(`File not found (already deleted or never existed): ${fileUrl}`);
+      if (error.code === 'ENOENT') {
+        console.log(`⚠️  File not found (already deleted or never existed): ${fileUrl}`);
+      } else {
+        console.error(`❌ Error accessing/deleting file ${fileUrl}:`, error);
+      }
     }
   } catch (error) {
-    console.error(`Error deleting file ${fileUrl}:`, error);
+    console.error(`❌ Error deleting file ${fileUrl}:`, error);
     // Don't throw - allow the upload to continue even if deletion fails
   }
 };
