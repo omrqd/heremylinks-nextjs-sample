@@ -743,16 +743,21 @@ export default function DashboardPage() {
     fileInputRef.current?.click();
   };
 
-  const handleProfileImageUpload = (fileUrl: string) => {
+  const handleProfileImageUpload = async (fileUrl: string) => {
     setProfileImage(fileUrl);
     
     // Save to database
     try {
-      fetch('/api/user/profile', {
+      const response = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profileImage: fileUrl }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+      
       showToast('Profile image updated successfully', 'success');
     } catch (error) {
       console.error('Error saving image:', error);
@@ -760,16 +765,21 @@ export default function DashboardPage() {
     }
   };
 
-  const handleHeroImageUpload = (fileUrl: string) => {
+  const handleHeroImageUpload = async (fileUrl: string) => {
     setHeroImage(fileUrl);
     
     // Save to database
     try {
-      fetch('/api/user/profile', {
+      const response = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ heroImage: fileUrl }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update hero image');
+      }
+      
       showToast('Hero image updated successfully! 🎨', 'success');
     } catch (error) {
       console.error('Error saving hero image:', error);
