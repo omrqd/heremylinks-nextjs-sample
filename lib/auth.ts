@@ -15,15 +15,12 @@ interface User extends RowDataPacket {
   profileImage: string | null;
   image: string | null;
   username: string;
+  is_verified: number;
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: {
-    strategy: "jwt",
-  },
-  jwt: {
-    secret: process.env.NEXTAUTH_SECRET,
-  },
+  secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -111,12 +108,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           // Check if account exists
-          const [accountRows] = await db.query(
+          const [accountRows] = await db.query<RowDataPacket[]>(
             'SELECT * FROM accounts WHERE provider = ? AND provider_account_id = ? LIMIT 1',
             [account.provider, account.providerAccountId]
           );
 
-          if (accountRows.length === 0) {
+          if (Array.isArray(accountRows) && accountRows.length === 0) {
             // Create account record
             await db.query(
               `INSERT INTO accounts (id, user_id, type, provider, provider_account_id, access_token, refresh_token, expires_at, token_type, scope, id_token) 

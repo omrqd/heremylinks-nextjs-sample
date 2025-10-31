@@ -3,7 +3,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
-import { Area } from 'react-easy-crop/types';
+
+// Define Area type locally to avoid import issues
+interface Area {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 interface ImageCropModalProps {
   imageSrc: string;
