@@ -167,22 +167,32 @@ export async function PATCH(request: NextRequest) {
     const currentUser = currentRows[0];
 
     // Delete old files when replacing them
+    console.log('🔍 Checking for files to delete...');
+    console.log('Current user profile_image:', currentUser?.profile_image);
+    console.log('New profileImage:', profileImage);
+    
     if (profileImage !== undefined && currentUser?.profile_image && profileImage !== currentUser.profile_image) {
+      console.log('🗑️  Deleting old profile image:', currentUser.profile_image);
       await deleteUploadedFile(currentUser.profile_image);
     }
     if (heroImage !== undefined && currentUser?.hero_image && heroImage !== currentUser.hero_image) {
+      console.log('🗑️  Deleting old hero image:', currentUser.hero_image);
       await deleteUploadedFile(currentUser.hero_image);
     }
     if (backgroundImage !== undefined && currentUser?.background_image && backgroundImage !== currentUser.background_image) {
+      console.log('🗑️  Deleting old background image:', currentUser.background_image);
       await deleteUploadedFile(currentUser.background_image);
     }
     if (backgroundVideo !== undefined && currentUser?.background_video && backgroundVideo !== currentUser.background_video) {
+      console.log('🗑️  Deleting old background video:', currentUser.background_video);
       await deleteUploadedFile(currentUser.background_video);
     }
     if (cardBackgroundImage !== undefined && currentUser?.card_background_image && cardBackgroundImage !== currentUser.card_background_image) {
+      console.log('🗑️  Deleting old card background image:', currentUser.card_background_image);
       await deleteUploadedFile(currentUser.card_background_image);
     }
     if (cardBackgroundVideo !== undefined && currentUser?.card_background_video && cardBackgroundVideo !== currentUser.card_background_video) {
+      console.log('🗑️  Deleting old card background video:', currentUser.card_background_video);
       await deleteUploadedFile(currentUser.card_background_video);
     }
 
