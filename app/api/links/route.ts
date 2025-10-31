@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import db from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
+import { deleteUploadedFile } from '@/lib/upload';
 
 interface BioLink extends RowDataPacket {
   id: string;
@@ -171,11 +172,24 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Delete link (ensure it belongs to the user)
+    // Fetch the link to get the image URL before deleting
+    const [linkRows] = await db.query<BioLink[]>(
+      'SELECT image FROM bio_links WHERE id = ? AND user_id = ? LIMIT 1',
+      [linkId, user.id]
+    );
+
+    const link = linkRows[0];
+    
+    // Delete the link from database
     await db.query('DELETE FROM bio_links WHERE id = ? AND user_id = ?', [
       linkId,
       user.id,
     ]);
+
+    // Delete the associated image file if it exists
+    if (link?.image) {
+      await deleteUploadedFile(link.image);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -104,8 +104,14 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
       console.error('Failed to track click:', error);
     }
 
+    // Ensure URL has protocol
+    let formattedUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      formattedUrl = 'https://' + url;
+    }
+
     // Open link
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(formattedUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (

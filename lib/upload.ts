@@ -62,3 +62,31 @@ export const saveUploadedFile = async (
   
   return { fileUrl, fileName };
 };
+
+/**
+ * Deletes an uploaded file from the filesystem
+ * @param fileUrl - The public URL of the file (e.g., /uploads/profiles/abc123.jpg)
+ */
+export const deleteUploadedFile = async (fileUrl: string | null | undefined): Promise<void> => {
+  if (!fileUrl || !fileUrl.startsWith('/uploads/')) {
+    return; // Skip if no file or not an uploaded file
+  }
+
+  try {
+    // Convert URL to filesystem path
+    const filePath = path.join(process.cwd(), 'public', fileUrl);
+    
+    // Check if file exists before attempting to delete
+    try {
+      await fs.access(filePath);
+      await fs.unlink(filePath);
+      console.log(`Deleted old file: ${fileUrl}`);
+    } catch (error) {
+      // File doesn't exist, which is fine
+      console.log(`File not found (already deleted or never existed): ${fileUrl}`);
+    }
+  } catch (error) {
+    console.error(`Error deleting file ${fileUrl}:`, error);
+    // Don't throw - allow the upload to continue even if deletion fails
+  }
+};

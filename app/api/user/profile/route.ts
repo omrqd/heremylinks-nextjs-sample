@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import db from '@/lib/db';
+import { deleteUploadedFile } from '@/lib/upload';
 import { RowDataPacket } from 'mysql2';
 
 interface User extends RowDataPacket {
@@ -157,12 +158,33 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Fetch current user to check existing background settings
+    // Fetch current user to check existing files for deletion
     const [currentRows] = await db.query<User[]>(
-      `SELECT id, background_image FROM users WHERE email = ? LIMIT 1`,
+      `SELECT id, profile_image, hero_image, background_image, background_video, 
+              card_background_image, card_background_video FROM users WHERE email = ? LIMIT 1`,
       [session.user.email]
     );
     const currentUser = currentRows[0];
+
+    // Delete old files when replacing them
+    if (profileImage !== undefined && currentUser?.profile_image && profileImage !== currentUser.profile_image) {
+      await deleteUploadedFile(currentUser.profile_image);
+    }
+    if (heroImage !== undefined && currentUser?.hero_image && heroImage !== currentUser.hero_image) {
+      await deleteUploadedFile(currentUser.hero_image);
+    }
+    if (backgroundImage !== undefined && currentUser?.background_image && backgroundImage !== currentUser.background_image) {
+      await deleteUploadedFile(currentUser.background_image);
+    }
+    if (backgroundVideo !== undefined && currentUser?.background_video && backgroundVideo !== currentUser.background_video) {
+      await deleteUploadedFile(currentUser.background_video);
+    }
+    if (cardBackgroundImage !== undefined && currentUser?.card_background_image && cardBackgroundImage !== currentUser.card_background_image) {
+      await deleteUploadedFile(currentUser.card_background_image);
+    }
+    if (cardBackgroundVideo !== undefined && currentUser?.card_background_video && cardBackgroundVideo !== currentUser.card_background_video) {
+      await deleteUploadedFile(currentUser.card_background_video);
+    }
 
     // Build dynamic update query
     const updates: string[] = [];
@@ -232,10 +254,28 @@ export async function PATCH(request: NextRequest) {
     if (backgroundImage !== undefined) {
       updates.push('background_image = ?');
       values.push(backgroundImage);
+      // Clear background video when setting background image
+      if (backgroundImage) {
+        updates.push('background_video = ?');
+        values.push('');
+        // Delete the old video file
+        if (currentUser?.background_video) {
+          await deleteUploadedFile(currentUser.background_video);
+        }
+      }
     }
     if (backgroundVideo !== undefined) {
       updates.push('background_video = ?');
       values.push(backgroundVideo);
+      // Clear background image when setting background video
+      if (backgroundVideo) {
+        updates.push('background_image = ?');
+        values.push('');
+        // Delete the old image file
+        if (currentUser?.background_image) {
+          await deleteUploadedFile(currentUser.background_image);
+        }
+      }
     }
     if (cardBackgroundColor !== undefined) {
       updates.push('card_background_color = ?');
@@ -244,10 +284,28 @@ export async function PATCH(request: NextRequest) {
     if (cardBackgroundImage !== undefined) {
       updates.push('card_background_image = ?');
       values.push(cardBackgroundImage);
+      // Clear card background video when setting card background image
+      if (cardBackgroundImage) {
+        updates.push('card_background_video = ?');
+        values.push('');
+        // Delete the old card video file
+        if (currentUser?.card_background_video) {
+          await deleteUploadedFile(currentUser.card_background_video);
+        }
+      }
     }
     if (cardBackgroundVideo !== undefined) {
       updates.push('card_background_video = ?');
       values.push(cardBackgroundVideo);
+      // Clear card background image when setting card background video
+      if (cardBackgroundVideo) {
+        updates.push('card_background_image = ?');
+        values.push('');
+        // Delete the old card image file
+        if (currentUser?.card_background_image) {
+          await deleteUploadedFile(currentUser.card_background_image);
+        }
+      }
     }
     if (customText !== undefined) {
       updates.push('custom_text = ?');
