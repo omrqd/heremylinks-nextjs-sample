@@ -266,6 +266,10 @@ export default function DashboardPage() {
   const [hasCustomUsername, setHasCustomUsername] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   
+  // Share URL modal state
+  const [showShareUrlModal, setShowShareUrlModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
   // Editing states
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingBio, setIsEditingBio] = useState(false);
@@ -1660,6 +1664,14 @@ export default function DashboardPage() {
           >
             <i className="fas fa-eye"></i>
             <span>Preview</span>
+          </button>
+          <button
+            className={styles.publishBtn}
+            title="Publish"
+            onClick={() => setShowShareUrlModal(true)}
+          >
+            <i className="fas fa-share-alt"></i>
+            <span>Publish</span>
           </button>
           <button className={styles.topBarIcon} title="Notifications">
             <i className="fas fa-bell"></i>
@@ -3126,6 +3138,106 @@ export default function DashboardPage() {
           onApply={(templateId) => handleTemplateSelect(templateId)}
           onClose={() => setShowTemplateChoice(false)}
         />
+      )}
+
+      {/* Share URL Modal */}
+      {showShareUrlModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>
+                <i className="fas fa-link"></i>
+                Your Link is Live!
+              </h3>
+              <button 
+                className={styles.modalClose}
+                onClick={() => {
+                  setShowShareUrlModal(false);
+                  setCopied(false);
+                }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              <p className={styles.shareUrlDescription}>
+                Share your personalized bio link with the world. Copy the URL below and add it to your social media profiles.
+              </p>
+
+              <div className={styles.shareUrlBox}>
+                <div className={styles.urlDisplayRow}>
+                  <div className={styles.urlIconWrapper}>
+                    <i className="fas fa-link"></i>
+                  </div>
+                  <div className={styles.urlTextWrapper}>
+                    <span className={styles.urlLabel}>Your Link</span>
+                    <a 
+                      href={`https://heremylinks.com/${(publishUsername || username).toLowerCase()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.urlText}
+                    >
+                      heremylinks.com/{(publishUsername || username).toLowerCase()}
+                    </a>
+                  </div>
+                </div>
+                <button
+                  className={styles.copyUrlBtn}
+                  onClick={() => {
+                    const url = `https://heremylinks.com/${(publishUsername || username).toLowerCase()}`;
+                    navigator.clipboard.writeText(url);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? (
+                    <>
+                      <i className="fas fa-check"></i>
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-copy"></i>
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className={styles.shareActionsGrid}>
+                <a
+                  href={`https://heremylinks.com/${(publishUsername || username).toLowerCase()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.shareActionBtn}
+                >
+                  <i className="fas fa-external-link-alt"></i>
+                  <span>Visit Page</span>
+                </a>
+                <button
+                  className={styles.shareActionBtn}
+                  onClick={() => {
+                    const url = `https://heremylinks.com/${(publishUsername || username).toLowerCase()}`;
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'Check out my bio link!',
+                        url: url
+                      }).catch(() => {});
+                    } else {
+                      navigator.clipboard.writeText(url);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }
+                  }}
+                >
+                  <i className="fas fa-share-nodes"></i>
+                  <span>Share</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
