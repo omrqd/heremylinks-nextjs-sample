@@ -826,12 +826,7 @@
     font-weight: 500;
 }
 
-/* Sidebar Bottom Section */
-.sidebarBottom {
-    margin-top: auto;
-    padding: 20px 0;
-    border-top: 1px solid #e5e7eb;
-}
+/* Sidebar Bottom Section - Removed duplicate, using definition at top of file */
 
 .sidebarPremium {
     display: flex;
