@@ -338,16 +338,17 @@ class SupabaseAdapter {
 const db = new SupabaseAdapter();
 
 // Test connection on startup
-supabaseAdmin
-  .from('users')
-  .select('count')
-  .limit(1)
-  .then(() => {
+(async () => {
+  try {
+    await supabaseAdmin
+      .from('users')
+      .select('count')
+      .limit(1);
     console.log('✅ Supabase Admin connected successfully (Service Role)');
-  })
-  .catch((err) => {
+  } catch (err: any) {
     console.error('❌ Supabase connection error:', err.message);
-  });
+  }
+})();
 
 export default db;
 
