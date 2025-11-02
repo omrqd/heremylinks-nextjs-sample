@@ -50,7 +50,7 @@ interface SocialLink {
 
 async function getUserByUsername(username: string): Promise<User | null> {
   try {
-    const [rows] = await db.query<User[]>(
+    const [rows] = await db.query<User>(
       `SELECT id, username, name, bio, profile_image, hero_image, hero_height, hide_profile_picture, 
               theme_color, background_color, template, background_image, background_video, 
               card_background_color, card_background_image, card_background_video, custom_text, 
@@ -68,7 +68,7 @@ async function getUserByUsername(username: string): Promise<User | null> {
 
 async function getUserLinks(userId: string): Promise<BioLink[]> {
   try {
-    const [rows] = await db.query<BioLink[]>(
+    const [rows] = await db.query<BioLink>(
       `SELECT id, title, url, icon, image, layout, background_color, text_color, is_transparent, \`order\`
        FROM bio_links WHERE user_id = ? AND is_visible = TRUE ORDER BY \`order\` ASC`,
       [userId]
@@ -83,7 +83,7 @@ async function getUserLinks(userId: string): Promise<BioLink[]> {
 
 async function getUserSocials(userId: string): Promise<SocialLink[]> {
   try {
-    const [rows] = await db.query<SocialLink[]>(
+    const [rows] = await db.query<SocialLink>(
       `SELECT id, platform, url, icon
        FROM social_links WHERE user_id = ? ORDER BY created_at ASC`,
       [userId]
