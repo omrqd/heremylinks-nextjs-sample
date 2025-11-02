@@ -104,8 +104,8 @@ R2_PUBLIC_URL=https://pub-xxx.r2.dev
 # Get from: https://resend.com/api-keys
 RESEND_API_KEY=re_your_api_key_here
 
-# Optional: Custom from email (requires domain verification)
-# Default: onboarding@resend.dev
+# From email (uses your verified domain)
+# Default: noreply@heremylinks.com
 FROM_EMAIL=noreply@heremylinks.com
 ```
 
