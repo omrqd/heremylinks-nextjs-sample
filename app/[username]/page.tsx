@@ -48,7 +48,7 @@ interface SocialLink {
   icon: string;
 }
 
-async function getUserByUsername(username: string) {
+async function getUserByUsername(username: string): Promise<User | null> {
   try {
     const [rows] = await db.query<User[]>(
       `SELECT id, username, name, bio, profile_image, hero_image, hero_height, hide_profile_picture, 
@@ -66,7 +66,7 @@ async function getUserByUsername(username: string) {
   }
 }
 
-async function getUserLinks(userId: string) {
+async function getUserLinks(userId: string): Promise<BioLink[]> {
   try {
     const [rows] = await db.query<BioLink[]>(
       `SELECT id, title, url, icon, image, layout, background_color, text_color, is_transparent, \`order\`
@@ -81,7 +81,7 @@ async function getUserLinks(userId: string) {
   }
 }
 
-async function getUserSocials(userId: string) {
+async function getUserSocials(userId: string): Promise<SocialLink[]> {
   try {
     const [rows] = await db.query<SocialLink[]>(
       `SELECT id, platform, url, icon
