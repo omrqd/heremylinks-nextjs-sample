@@ -1242,6 +1242,10 @@ export default function DashboardPage() {
             <i className="fas fa-chart-line"></i>
             <span>Analytics</span>
           </Link>
+          <Link href="/dashboard/templates" className={styles.navItem}>
+            <i className="fas fa-palette"></i>
+            <span>Templates</span>
+          </Link>
         </nav>
 
         {/* Make Money Section */}
