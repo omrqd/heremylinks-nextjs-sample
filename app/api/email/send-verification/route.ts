@@ -4,7 +4,7 @@ import db from '@/lib/db';
 import { generateVerificationCode, getVerificationCodeExpiry } from '@/lib/utils';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+const fromEmail = process.env.FROM_EMAIL || 'noreply@heremylinks.com';
 
 export async function POST(request: Request) {
   try {
