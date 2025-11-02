@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     console.log('   From:', fromEmail);
     console.log('   To:', email);
     
-    const data = await resend.emails.send({
+    const result = await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: 'Verify your HereMyLinks account',
@@ -81,10 +81,9 @@ export async function POST(request: Request) {
     });
 
     console.log('✅ Email sent successfully via Resend');
-    console.log('   Email ID:', data.id);
-    console.log('   Status:', data);
+    console.log('   Response:', result);
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data: result.data });
   } catch (error: any) {
     console.error('❌ Error sending verification email:', error);
     console.error('   Error message:', error.message);
