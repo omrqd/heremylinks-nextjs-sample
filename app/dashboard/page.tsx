@@ -257,6 +257,8 @@ export default function DashboardPage() {
   const [showLinkTypeModal, setShowLinkTypeModal] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showSocialIconsModal, setShowSocialIconsModal] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   
   // Publish modal states
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -1675,12 +1677,56 @@ export default function DashboardPage() {
             <i className="fas fa-share-alt"></i>
             <span>Publish</span>
           </button>
-          <button className={styles.topBarIcon} title="Notifications">
-            <i className="fas fa-bell"></i>
-          </button>
+          {/* Notifications Dropdown */}
+          <div className={styles.dropdownWrapper}>
+            <button 
+              className={styles.topBarIcon} 
+              title="Notifications"
+              onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+            >
+              <i className="fas fa-bell"></i>
+            </button>
+            
+            {showNotificationsDropdown && (
+              <>
+                <div 
+                  className={styles.dropdownOverlay} 
+                  onClick={() => setShowNotificationsDropdown(false)}
+                />
+                <div className={styles.notificationsDropdown}>
+                  <div className={styles.notificationsHeader}>
+                    <h3>Notifications</h3>
+                  </div>
+                  <div className={styles.notificationsList}>
+                    <div className={styles.notificationItem}>
+                      <div className={styles.notificationIcon}>
+                        <i className="fas fa-info-circle"></i>
+                      </div>
+                      <div className={styles.notificationContent}>
+                        <p className={styles.notificationText}>Welcome to HereMyLinks! 🎉</p>
+                        <span className={styles.notificationTime}>Just now</span>
+                      </div>
+                    </div>
+                    {/* Add more notifications here when available */}
+                  </div>
+                  <button 
+                    className={styles.notificationsViewAll}
+                    onClick={() => {
+                      setShowNotificationsDropdown(false);
+                      // Navigate to notifications page when implemented
+                    }}
+                  >
+                    Show all notifications
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
           <button className={styles.topBarIcon} title="Settings">
             <i className="fas fa-cog"></i>
           </button>
+          
           {/* Debug: Test First-Time Setup */}
           <button 
             className={styles.topBarIcon} 
@@ -1693,18 +1739,59 @@ export default function DashboardPage() {
           >
             <i className="fas fa-magic"></i>
           </button>
-          <button 
-            className={styles.topBarProfile}
-            onClick={() => signOut({ callbackUrl: '/login' })}
-          >
-            {profileImage ? (
-              <img src={profileImage} alt={displayName} className={styles.topBarAvatar} />
-            ) : (
-              <div className={styles.topBarAvatarPlaceholder}>
-                {displayName.charAt(0).toUpperCase()}
-              </div>
+          
+          {/* Profile Dropdown */}
+          <div className={styles.dropdownWrapper}>
+            <button 
+              className={styles.topBarProfile}
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            >
+              {profileImage ? (
+                <img src={profileImage} alt={displayName} className={styles.topBarAvatar} />
+              ) : (
+                <div className={styles.topBarAvatarPlaceholder}>
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </button>
+            
+            {showProfileDropdown && (
+              <>
+                <div 
+                  className={styles.dropdownOverlay} 
+                  onClick={() => setShowProfileDropdown(false)}
+                />
+                <div className={styles.profileDropdown}>
+                  <div className={styles.profileDropdownHeader}>
+                    <div className={styles.profileDropdownAvatar}>
+                      {profileImage ? (
+                        <img src={profileImage} alt={displayName} />
+                      ) : (
+                        <div className={styles.profileDropdownAvatarPlaceholder}>
+                          {displayName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.profileDropdownInfo}>
+                      <p className={styles.profileDropdownName}>{displayName}</p>
+                      <p className={styles.profileDropdownEmail}>{session?.user?.email}</p>
+                    </div>
+                  </div>
+                  <div className={styles.profileDropdownDivider}></div>
+                  <button 
+                    className={styles.profileDropdownItem}
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      signOut({ callbackUrl: '/login' });
+                    }}
+                  >
+                    <i className="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </>
             )}
-          </button>
+          </div>
         </div>
       </header>
 
