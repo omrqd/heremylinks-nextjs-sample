@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import db from '@/lib/db';
-import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-interface User extends RowDataPacket {
+interface User {
   id: string;
 }
 
-interface SocialLinkRow extends RowDataPacket {
+interface SocialLinkRow {
   id: string;
   user_id: string;
   platform: string;

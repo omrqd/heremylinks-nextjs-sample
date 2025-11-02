@@ -2,10 +2,9 @@ import { notFound } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 import db from '@/lib/db';
-import { RowDataPacket } from 'mysql2';
 import PublicBioPage from './PublicBioPage';
 
-interface User extends RowDataPacket {
+interface User {
   id: string;
   username: string;
   name: string | null;
@@ -29,7 +28,7 @@ interface User extends RowDataPacket {
   is_published: boolean;
 }
 
-interface BioLink extends RowDataPacket {
+interface BioLink {
   id: string;
   title: string;
   url: string;
@@ -42,7 +41,7 @@ interface BioLink extends RowDataPacket {
   order: number;
 }
 
-interface SocialLink extends RowDataPacket {
+interface SocialLink {
   id: string;
   platform: string;
   url: string;
