@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import db from '@/lib/db';
 import { deleteFromR2 } from '@/lib/r2';
-import { RowDataPacket } from 'mysql2';
 
-interface User extends RowDataPacket {
+interface User {
   id: string;
   username: string;
   email: string;
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [rows] = await db.query<User[]>(
+    const [rows]: [User[], any] = await db.query(
       `SELECT id, username, email, name, bio, profile_image, hero_image, hero_height, hide_profile_picture,
               theme_color, background_color, template, background_image, background_video, 
               card_background_color, card_background_image, card_background_video, custom_text, 
@@ -47,43 +46,43 @@ export async function GET(request: NextRequest) {
       [session.user.email]
     );
 
-    const user = rows[0];
+    const userProfile = rows[0];
 
-    if (!user) {
+    if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Compute template-aware defaults
-    const effectiveTemplate = user.template || 'default';
+    const effectiveTemplate = userProfile.template || 'default';
     const defaultUsernameColor =
-      user.username_color || (effectiveTemplate === 'template3' ? '#ffffff' : '#1a1a1a');
+      userProfile.username_color || (effectiveTemplate === 'template3' ? '#ffffff' : '#1a1a1a');
     const defaultCustomTextColor =
-      user.custom_text_color || (effectiveTemplate === 'template3' ? '#ffffff' : '#4b5563');
+      userProfile.custom_text_color || (effectiveTemplate === 'template3' ? '#ffffff' : '#4b5563');
 
     return NextResponse.json({
       user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        name: user.name,
-        bio: user.bio,
-        profileImage: user.profile_image,
-        heroImage: user.hero_image,
-        heroHeight: user.hero_height || 300,
-        hideProfilePicture: user.hide_profile_picture || false,
-        themeColor: user.theme_color,
-        backgroundColor: user.background_color,
+        id: userProfile.id,
+        username: userProfile.username,
+        email: userProfile.email,
+        name: userProfile.name,
+        bio: userProfile.bio,
+        profileImage: userProfile.profile_image,
+        heroImage: userProfile.hero_image,
+        heroHeight: userProfile.hero_height || 300,
+        hideProfilePicture: userProfile.hide_profile_picture || false,
+        themeColor: userProfile.theme_color,
+        backgroundColor: userProfile.background_color,
         template: effectiveTemplate,
-        backgroundImage: user.background_image,
-        backgroundVideo: user.background_video,
-        cardBackgroundColor: user.card_background_color || '#ffffff',
-        cardBackgroundImage: user.card_background_image,
-        cardBackgroundVideo: user.card_background_video,
-        customText: user.custom_text,
+        backgroundImage: userProfile.background_image,
+        backgroundVideo: userProfile.background_video,
+        cardBackgroundColor: userProfile.card_background_color || '#ffffff',
+        cardBackgroundImage: userProfile.card_background_image,
+        cardBackgroundVideo: userProfile.card_background_video,
+        customText: userProfile.custom_text,
         usernameColor: defaultUsernameColor,
-        bioColor: user.bio_color || '#6b7280',
+        bioColor: userProfile.bio_color || '#6b7280',
         customTextColor: defaultCustomTextColor,
-        isPublished: user.is_published,
+        isPublished: userProfile.is_published,
       },
     });
   } catch (error) {
@@ -145,7 +144,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Check if username is already taken by another user
-      const [existingUsers] = await db.query<User[]>(
+      const [existingUsers]: [User[], any] = await db.query(
         'SELECT id FROM users WHERE LOWER(username) = LOWER(?) AND email != ? LIMIT 1',
         [username, session.user.email]
       );
@@ -162,7 +161,7 @@ export async function PATCH(request: NextRequest) {
     console.log('🔍 Session email:', session.user.email);
     
     // Fetch current user to check existing files for deletion
-    const [currentRows] = await db.query<User[]>(
+    const [currentRows]: [User[], any] = await db.query(
       `SELECT id, email, profile_image, hero_image, background_image, background_video, 
               card_background_image, card_background_video FROM users WHERE email = ? LIMIT 1`,
       [session.user.email]

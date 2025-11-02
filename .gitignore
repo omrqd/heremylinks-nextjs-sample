@@ -36,3 +36,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+
+# Wrangler local environment variables
+.dev.vars

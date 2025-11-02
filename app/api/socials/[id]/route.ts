@@ -26,7 +26,7 @@ export async function DELETE(
     }
 
     // Get user ID from email
-    const [userRows] = await db.query<User[]>(
+    const [userRows]: [User[], any] = await db.query<User>(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [session.user.email]
     );

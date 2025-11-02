@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import db from '@/lib/db';
-import { RowDataPacket } from 'mysql2';
 import { deleteFromR2 } from '@/lib/r2';
 
-interface BioLink extends RowDataPacket {
+interface BioLink {
   id: string;
   title: string;
   url: string;
@@ -19,7 +18,7 @@ interface BioLink extends RowDataPacket {
   is_visible: boolean;
 }
 
-interface User extends RowDataPacket {
+interface User {
   id: string;
 }
 
@@ -33,23 +32,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user ID from email
-    const [userRows] = await db.query<User[]>(
+    const [userRows]: [User[], any] = await db.query(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [session.user.email]
     );
 
-    const user = userRows[0];
-    if (!user) {
+    const userProfile = userRows[0];
+    if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Fetch links
-    const [links] = await db.query<BioLink[]>(
+    const [links]: [BioLink[], any] = await db.query(
       `SELECT id, title, url, icon, image, layout, background_color, text_color, is_transparent, \`order\`, is_visible 
        FROM bio_links 
        WHERE user_id = ? AND is_visible = TRUE 
        ORDER BY \`order\` ASC`,
-      [user.id]
+      [userProfile.id]
     );
 
     return NextResponse.json({
@@ -85,13 +84,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user ID from email
-    const [userRows] = await db.query<User[]>(
+    const [userRows]: [User[], any] = await db.query(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [session.user.email]
     );
 
-    const user = userRows[0];
-    if (!user) {
+    const userProfile = userRows[0];
+    if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         linkId,
-        user.id,
+        userProfile.id,
         title,
         url,
         icon || null,
@@ -162,20 +161,20 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get user ID from email
-    const [userRows] = await db.query<User[]>(
+    const [userRows]: [User[], any] = await db.query(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [session.user.email]
     );
 
-    const user = userRows[0];
-    if (!user) {
+    const userProfile = userRows[0];
+    if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Fetch the link to get the image URL before deleting
-    const [linkRows] = await db.query<BioLink[]>(
+    const [linkRows]: [BioLink[], any] = await db.query(
       'SELECT image FROM bio_links WHERE id = ? AND user_id = ? LIMIT 1',
-      [linkId, user.id]
+      [linkId, userProfile.id]
     );
 
     const link = linkRows[0];
@@ -183,7 +182,7 @@ export async function DELETE(request: NextRequest) {
     // Delete the link from database
     await db.query('DELETE FROM bio_links WHERE id = ? AND user_id = ?', [
       linkId,
-      user.id,
+      userProfile.id,
     ]);
 
     // Delete the associated image file if it exists
@@ -221,13 +220,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get user ID from email
-    const [userRows] = await db.query<User[]>(
+    const [userRows]: [User[], any] = await db.query(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [session.user.email]
     );
 
-    const user = userRows[0];
-    if (!user) {
+    const userProfile = userRows[0];
+    if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -252,7 +251,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    values.push(id, user.id);
+    values.push(id, userProfile.id);
 
     // Update link (ensure it belongs to the user)
     await db.query(

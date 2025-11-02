@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { RowDataPacket } from 'mysql2';
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user exists and if they're verified
-    const [rows] = await db.query<RowDataPacket[]>(
+    const [rows]: any = await db.query(
       'SELECT id, is_verified FROM users WHERE email = ?',
       [email]
     );

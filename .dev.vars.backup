@@ -1,0 +1,26 @@
+# Cloudflare D1 Local Development Variables
+# These are automatically loaded when using: npm run dev:wrangler
+
+# NextAuth
+NEXTAUTH_SECRET=your-secret-key-change-this-in-production
+NEXTAUTH_URL=http://localhost:3000
+
+# Google OAuth (get from Google Cloud Console)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Apple OAuth (get from Apple Developer)
+APPLE_ID=com.heremylinks.web.service
+APPLE_SECRET=your-apple-jwt-token
+
+# Cloudflare R2 Storage
+R2_ACCOUNT_ID=your-cloudflare-account-id
+R2_ACCESS_KEY_ID=your-r2-access-key
+R2_SECRET_ACCESS_KEY=your-r2-secret-key
+R2_BUCKET_NAME=heremylinks-uploads
+R2_PUBLIC_URL=https://your-bucket.r2.cloudflarestorage.com
+
+# Email (Resend)
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL=noreply@heremylinks.com
+

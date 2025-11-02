@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user ID from email
-    const [userRows] = await db.query<User[]>(
+    const [userRows]: [User[], any] = await db.query<User>(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [session.user.email]
     );
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const userId = user.id;
 
     // Fetch social links for the user
-    const [socialRows] = await db.query<SocialLinkRow[]>(
+    const [socialRows]: [SocialLinkRow[], any] = await db.query<SocialLinkRow>(
       'SELECT id, user_id, platform, url, icon, created_at FROM social_links WHERE user_id = ? ORDER BY created_at ASC',
       [userId]
     );
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user ID from email
-    const [userRows] = await db.query<User[]>(
+    const [userRows]: [User[], any] = await db.query<User>(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [session.user.email]
     );

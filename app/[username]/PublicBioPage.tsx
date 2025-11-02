@@ -291,8 +291,8 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
                   border: 'none',
                   borderColor: 'transparent',
                 } : {
-                  borderColor: link.isTransparent ? 'rgba(255, 255, 255, 0.3)' : user.themeColor,
-                  border: link.isTransparent ? '2px solid rgba(255, 255, 255, 0.3)' : `2px solid ${user.themeColor}`,
+                borderColor: link.isTransparent ? 'rgba(255, 255, 255, 0.3)' : user.themeColor,
+                border: link.isTransparent ? '2px solid rgba(255, 255, 255, 0.3)' : `2px solid ${user.themeColor}`,
                 }),
                 // For template3, apply image as background for specific layouts
                 ...(shouldUseBackgroundImage && {

@@ -3,9 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { generateVerificationCode, getVerificationCodeExpiry } from '@/lib/utils';
-import { RowDataPacket } from 'mysql2';
 
-interface User extends RowDataPacket {
+interface User {
   id: string;
 }
 
@@ -23,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const [existingUsers] = await db.query<User[]>(
+    const [existingUsers]: any = await db.query(
       'SELECT id FROM users WHERE email = ? LIMIT 1',
       [email]
     );
@@ -36,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if username is taken
-    const [existingUsername] = await db.query<User[]>(
+    const [existingUsername]: any = await db.query(
       'SELECT id FROM users WHERE username = ? LIMIT 1',
       [username]
     );
@@ -66,13 +65,23 @@ export async function POST(request: NextRequest) {
     
     // Send verification email
     try {
-      await fetch(`${request.nextUrl.origin}/api/email/send-verification`, {
+      const emailResponse = await fetch(`${request.nextUrl.origin}/api/email/send-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, username: name || username }),
       });
+      
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json();
+        console.error('❌ Failed to send verification email:', errorData);
+        console.error('Email API returned status:', emailResponse.status);
+      } else {
+        const successData = await emailResponse.json();
+        console.log('✅ Verification email sent successfully to:', email);
+        console.log('Email response:', successData);
+      }
     } catch (error) {
-      console.error('Failed to send verification email:', error);
+      console.error('❌ Error calling email API:', error);
       // Continue with registration even if email fails
     }
 

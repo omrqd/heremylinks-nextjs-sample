@@ -7,7 +7,7 @@
 #
 # Host: localhost (MySQL 9.4.0)
 # Database: heremylinks
-# Generation Time: 2025-10-27 11:28:03 +0000
+# Generation Time: 2025-11-01 13:28:51 +0000
 # ************************************************************
 
 
@@ -46,15 +46,6 @@ CREATE TABLE `accounts` (
   CONSTRAINT `accounts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-LOCK TABLES `accounts` WRITE;
-/*!40000 ALTER TABLE `accounts` DISABLE KEYS */;
-
-INSERT INTO `accounts` (`id`, `user_id`, `type`, `provider`, `provider_account_id`, `refresh_token`, `access_token`, `expires_at`, `token_type`, `scope`, `id_token`, `session_state`, `created_at`)
-VALUES
-	('8563bd0f-a31e-4a31-8b3a-bf7eef6e056a','0e528847-4829-451e-8a5a-4f2d76e2e23a','oidc','google','102849301751037279538',NULL,'ya29.A0ATi6K2tWTP20ZXGpyiI5oFPDspI0LNYtADE358_pSeEdIKRRUYSRIxoi73yjG8eObTvPj8cV4OvsJZQ2GWRTmrEnj5wr4CUy2St5VjWi3MQL_8EPnFT2-5GIfOlfvG1aw4lKPHThpsBCgUXXCtvaReO4T1iv5FzDeUCbNxP2iaDF-HTc_EwUusRs7nEuJ5QlWXAuAWh82I-bIL_u5k-8kfBigT3LG6wK-wCNXNlq5RTjhJ1Dpsd14FAVnkxLYb6YZnNQhmTcAWk2KBry1aPS1zdH8jNQaCgYKAT8SARMSFQHGX2MidzpKtjoQ2XNVll7Be_T6Fg0291',1761519414,'bearer','https://www.googleapis.com/auth/userinfo.email openid https://www.googleapis.com/auth/userinfo.profile','eyJhbGciOiJSUzI1NiIsImtpZCI6Ijg4NDg5MjEyMmUyOTM5ZmQxZjMxMzc1YjJiMzYzZWM4MTU3MjNiYmIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI1MTgyNzI2NzI3NzctZ3RuZ3V1azZsYXVsaWQ1N3Y5NmxuZGw3Zjd0ZDMyaW4uYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1MTgyNzI2NzI3NzctZ3RuZ3V1azZsYXVsaWQ1N3Y5NmxuZGw3Zjd0ZDMyaW4uYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDI4NDkzMDE3NTEwMzcyNzk1MzgiLCJlbWFpbCI6Im1vcmEuZHhidWFlQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiM2dLUHhjSndDZTRRTkx6WUZlbFJpdyIsIm5hbWUiOiJPbWFyIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0wzdl9FSDFHT29XWmlqT2ItRDJHaVVTcGk3QUFJM1Z5QWNUYWdhX0ttcmJzZVhFZz1zOTYtYyIsImdpdmVuX25hbWUiOiJPbWFyIiwiaWF0IjoxNzYxNTE1ODE2LCJleHAiOjE3NjE1MTk0MTZ9.YDsPcLp3YLXTppmvnuM0ZnDADCtRF2BGVAyPAnU_KZEAq31UMqnm1YzK_sE6RcKt4h3pgdo5U2-6jUi4DndQ734x_22Zu1yGKeTBRSeB-R42u6g-ITpQgv6e-DByAH2oEvZytjr7ju4ib0fbKf4mR3sgrW1p5RXlOARKGfcZ521JgvW_eH6g9AzMvgdWmiuKEyiy1CNsFECyeLp01UTNnGBt81VBm2EbgLlmahpfQzx7QHsQ0mFEZ-LBXHfPlpwubUbqEzwL0vW9A3FCwbTA04eXAV5G7XwHuvUIvJvdHr9MPfGmVdaUNPiGrZlY7O2wXGJf0qUILOzlsoUH8LWsEQ',NULL,'2025-10-27 00:56:56');
-
-/*!40000 ALTER TABLE `accounts` ENABLE KEYS */;
-UNLOCK TABLES;
 
 
 # Dump of table bio_links
@@ -72,6 +63,7 @@ CREATE TABLE `bio_links` (
   `layout` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'simple',
   `background_color` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `text_color` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_transparent` tinyint(1) DEFAULT '0',
   `order` int DEFAULT '0',
   `is_visible` tinyint(1) DEFAULT '1',
   `click_count` int DEFAULT '0',
@@ -83,15 +75,6 @@ CREATE TABLE `bio_links` (
   CONSTRAINT `bio_links_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-LOCK TABLES `bio_links` WRITE;
-/*!40000 ALTER TABLE `bio_links` DISABLE KEYS */;
-
-INSERT INTO `bio_links` (`id`, `user_id`, `title`, `url`, `icon`, `image`, `layout`, `background_color`, `text_color`, `order`, `is_visible`, `click_count`, `created_at`, `updated_at`)
-VALUES
-	('b919d80c-befa-431c-b65f-d2768a9db59a','0e528847-4829-451e-8a5a-4f2d76e2e23a','My 🔥🔥','https://fb.com',NULL,'/uploads/links/c873a95d-776d-4284-9593-bac755bbcc8e.png','image-large',NULL,NULL,3,1,0,'2025-10-27 14:03:09','2025-10-27 14:03:09');
-
-/*!40000 ALTER TABLE `bio_links` ENABLE KEYS */;
-UNLOCK TABLES;
 
 
 # Dump of table social_links
@@ -111,16 +94,6 @@ CREATE TABLE `social_links` (
   CONSTRAINT `social_links_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-LOCK TABLES `social_links` WRITE;
-/*!40000 ALTER TABLE `social_links` DISABLE KEYS */;
-
-INSERT INTO `social_links` (`id`, `user_id`, `platform`, `url`, `icon`, `created_at`)
-VALUES
-	('2423321d-34b4-454c-a084-df42aff4c476','0e528847-4829-451e-8a5a-4f2d76e2e23a','Instagram','https://instagram.com/0mr55','fab fa-instagram','2025-10-27 14:04:40'),
-	('892d7e86-e706-49a7-a42d-5267f0cd4a70','0e528847-4829-451e-8a5a-4f2d76e2e23a','LinkedIn','https://linkedin.com','fab fa-linkedin-in','2025-10-27 14:04:50');
-
-/*!40000 ALTER TABLE `social_links` ENABLE KEYS */;
-UNLOCK TABLES;
 
 
 # Dump of table users
@@ -140,9 +113,21 @@ CREATE TABLE `users` (
   `provider` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `provider_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `profile_image` longtext COLLATE utf8mb4_unicode_ci,
+  `hero_image` text COLLATE utf8mb4_unicode_ci COMMENT 'Hero/banner image for profile page (separate from profile picture)',
+  `hero_height` int DEFAULT '300' COMMENT 'Height of hero banner in pixels (for template3)',
+  `hide_profile_picture` tinyint(1) DEFAULT '0' COMMENT 'Hide profile picture in template3 (hero only)',
   `theme_color` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT '#667eea',
   `background_color` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT '#ffffff',
-  `template` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'default',
+  `template` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'template3',
+  `background_image` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Path to background image file',
+  `background_video` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Path to background video file',
+  `card_background_color` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT '#ffffff',
+  `card_background_image` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `card_background_video` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `custom_text` text COLLATE utf8mb4_unicode_ci COMMENT 'Custom text block displayed on bio page',
+  `username_color` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT '#1a1a1a' COMMENT 'Username text color',
+  `bio_color` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT '#6b7280' COMMENT 'Bio text color',
+  `custom_text_color` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT '#4b5563' COMMENT 'Custom text color',
   `is_published` tinyint(1) DEFAULT '0',
   `custom_domain` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -157,15 +142,6 @@ CREATE TABLE `users` (
   KEY `idx_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-LOCK TABLES `users` WRITE;
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-
-INSERT INTO `users` (`id`, `username`, `email`, `email_verified`, `name`, `image`, `bio`, `password`, `provider`, `provider_id`, `profile_image`, `theme_color`, `background_color`, `template`, `is_published`, `custom_domain`, `created_at`, `updated_at`, `verification_code`, `verification_code_expires`, `is_verified`)
-VALUES
-	('0e528847-4829-451e-8a5a-4f2d76e2e23a','mromarnasr','mora.dxbuae@gmail.com','2025-10-27 00:56:56','DR Ahmed Khaled','https://lh3.googleusercontent.com/a/ACg8ocL3v_EH1GOoWZijOb-D2GiUSpi7AAI3VyAcTaga_KmrbseXEg=s96-c','Software Developer @ Google.com',NULL,'google','102849301751037279538','/uploads/profiles/fadbe17d-37c8-400d-b032-b2e5d6b88f15.PNG','#667eea','#ffffff','default',1,NULL,'2025-10-27 00:56:56','2025-10-27 14:13:56',NULL,NULL,1);
-
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
-UNLOCK TABLES;
 
 
 

@@ -10,13 +10,23 @@ export async function POST(request: Request) {
   try {
     const { email, username } = await request.json();
     
+    console.log('📧 Sending verification email to:', email);
+    
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY is not configured in environment variables');
+      return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
     }
 
     // Generate verification code
     const verificationCode = generateVerificationCode();
     const expiryDate = getVerificationCodeExpiry();
+    
+    console.log('🔑 Generated verification code:', verificationCode);
     
     // Store verification code in database
     await db.query(
@@ -29,6 +39,10 @@ export async function POST(request: Request) {
     );
     
     // Send email with verification code using HTML directly instead of React component
+    console.log('📤 Attempting to send email via Resend...');
+    console.log('   From:', fromEmail);
+    console.log('   To:', email);
+    
     const data = await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -66,9 +80,18 @@ export async function POST(request: Request) {
       `
     });
 
+    console.log('✅ Email sent successfully via Resend');
+    console.log('   Email ID:', data.id);
+    console.log('   Status:', data);
+
     return NextResponse.json({ success: true, data });
-  } catch (error) {
-    console.error('Error sending verification email:', error);
-    return NextResponse.json({ error: 'Failed to send verification email' }, { status: 500 });
+  } catch (error: any) {
+    console.error('❌ Error sending verification email:', error);
+    console.error('   Error message:', error.message);
+    console.error('   Error details:', error);
+    return NextResponse.json({ 
+      error: 'Failed to send verification email',
+      details: error.message 
+    }, { status: 500 });
   }
 }

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if username exists in database (case-insensitive)
-    const [rows] = await db.query<User[]>(
+    const [rows]: [User[], any] = await db.query<User>(
       'SELECT id FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1',
       [username]
     );

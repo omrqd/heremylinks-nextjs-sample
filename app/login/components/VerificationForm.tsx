@@ -7,6 +7,8 @@ interface VerificationFormProps {
   onVerify: () => void;
   onResend: () => Promise<void>;
   isLoading: boolean;
+  canResend?: boolean;
+  countdown?: number;
 }
 
 const VerificationForm: React.FC<VerificationFormProps> = ({ 
@@ -14,7 +16,9 @@ const VerificationForm: React.FC<VerificationFormProps> = ({
   setVerificationCode,
   onVerify, 
   onResend,
-  isLoading
+  isLoading,
+  canResend = true,
+  countdown = 0
 }) => {
   return (
     <div className={styles.verificationContainer}>
@@ -47,9 +51,11 @@ const VerificationForm: React.FC<VerificationFormProps> = ({
           type="button"
           className={styles.resendButton}
           onClick={onResend}
-          disabled={isLoading}
+          disabled={isLoading || !canResend}
         >
-          Resend verification code
+          {!canResend && countdown > 0 
+            ? `Resend code in ${countdown}s` 
+            : 'Resend verification code'}
         </button>
       </div>
     </div>

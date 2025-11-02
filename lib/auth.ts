@@ -5,9 +5,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { v4 as uuidv4 } from 'uuid';
 import db from './db';
 import bcrypt from 'bcryptjs';
-import { RowDataPacket } from 'mysql2';
 
-interface User extends RowDataPacket {
+interface User {
   id: string;
   email: string;
   name: string | null;
@@ -15,7 +14,7 @@ interface User extends RowDataPacket {
   profileImage: string | null;
   image: string | null;
   username: string;
-  is_verified: number;
+  is_verified: boolean;
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -42,7 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const [rows] = await db.query<User[]>(
+        const [rows]: any = await db.query(
           'SELECT * FROM users WHERE email = ? LIMIT 1',
           [credentials.email as string]
         );
@@ -63,7 +62,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
         
         // Check if user is verified
-        if (user.is_verified === 0) {
+        if (!user.is_verified) {
           throw new Error('Please verify your email before logging in');
         }
 
@@ -71,7 +70,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.profileImage || user.image,
+          image: user.profile_image || user.image,
           username: user.username,
         };
       },
@@ -89,7 +88,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === 'google' || account?.provider === 'apple') {
         try {
           // Check if user exists
-          const [rows] = await db.query<User[]>(
+          const [rows]: any = await db.query(
             'SELECT * FROM users WHERE email = ? LIMIT 1',
             [user.email]
           );
@@ -99,38 +98,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!userId) {
             // Create new user
             userId = uuidv4();
-            const username = user.email!.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(Math.random() * 1000);
+            const username = user.email?.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
             
             await db.query(
-              `INSERT INTO users (id, email, name, image, username, provider, provider_id, email_verified) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-              [userId, user.email, user.name, user.image, username, account.provider, account.providerAccountId]
-            );
-          }
-
-          // Check if account exists
-          const [accountRows] = await db.query<RowDataPacket[]>(
-            'SELECT * FROM accounts WHERE provider = ? AND provider_account_id = ? LIMIT 1',
-            [account.provider, account.providerAccountId]
-          );
-
-          if (Array.isArray(accountRows) && accountRows.length === 0) {
-            // Create account record
-            await db.query(
-              `INSERT INTO accounts (id, user_id, type, provider, provider_account_id, access_token, refresh_token, expires_at, token_type, scope, id_token) 
+              `INSERT INTO users (id, email, username, name, profile_image, provider, theme_color, background_color, card_background_color, is_published, is_verified) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               [
-                uuidv4(),
                 userId,
-                account.type,
+                user.email,
+                username,
+                user.name || username,
+                user.image,
                 account.provider,
-                account.providerAccountId,
-                account.access_token,
-                account.refresh_token,
-                account.expires_at,
-                account.token_type,
-                account.scope,
-                account.id_token
+                '#8B5CF6',
+                '#ffffff',
+                '#ffffff',
+                false,
+                true, // OAuth users are auto-verified
               ]
             );
           }
@@ -151,11 +135,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
+      if (token && session.user) {
+        (session.user as any).id = token.id;
         (session.user as any).username = token.username;
       }
       return session;
     },
   },
 });
+
