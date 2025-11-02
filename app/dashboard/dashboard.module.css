@@ -147,8 +147,7 @@
 
 .sidebarBottom {
     margin-top: auto;
-    padding: 20px 12px 0;
-    border-top: 1px solid #2A2A2A;
+    padding: 0 12px;
     display: flex;
     flex-direction: column;
     gap: 4px; /* Same gap as sidebarNav */
