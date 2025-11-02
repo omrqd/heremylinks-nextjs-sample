@@ -1234,72 +1234,39 @@ export default function DashboardPage() {
 
         {/* Navigation Menu */}
         <nav className={styles.sidebarNav}>
-          <button className={styles.navItem}>
-            <i className="fas fa-search"></i>
-            <span>Search</span>
-          </button>
-          <button className={`${styles.navItem} ${styles.navItemActive}`}>
+          <Link href="/dashboard" className={`${styles.navItem} ${styles.navItemActive}`}>
             <i className="fas fa-user"></i>
             <span>Profile</span>
-          </button>
-          <button className={styles.navItem}>
-            <i className="fas fa-envelope"></i>
-            <span>Messages</span>
-          </button>
-          <button className={styles.navItem}>
+          </Link>
+          <Link href="/dashboard/analytics" className={styles.navItem}>
             <i className="fas fa-chart-line"></i>
             <span>Analytics</span>
-          </button>
-          <button className={styles.navItem}>
-            <i className="fas fa-briefcase"></i>
-            <span>Agency</span>
-          </button>
+          </Link>
         </nav>
 
         {/* Make Money Section */}
         <div className={styles.sidebarSection}>
-          <div className={styles.sectionTitle}>Make Money</div>
-          <button className={styles.navItem}>
-            <i className="fas fa-dollar-sign"></i>
-            <span>Your Sales</span>
-            <i className="fas fa-chevron-down" style={{ marginLeft: 'auto', fontSize: '12px' }}></i>
-          </button>
-          <button className={styles.navItem}>
-            <i className="fas fa-hand-holding-usd"></i>
-            <span>Collect Tips</span>
-          </button>
-          <button className={styles.navItem}>
-            <i className="fas fa-shopping-bag"></i>
-            <span>Create & Sell Merch</span>
-            <i className="fas fa-chevron-down" style={{ marginLeft: 'auto', fontSize: '12px' }}></i>
-          </button>
-          <button className={styles.navItem}>
-            <i className="fas fa-download"></i>
-            <span>Sell Digital Products</span>
-            <i className="fas fa-chevron-down" style={{ marginLeft: 'auto', fontSize: '12px' }}></i>
-          </button>
-          <button className={styles.navItem}>
-            <i className="fas fa-graduation-cap"></i>
-            <span>Course Builder</span>
-            <div className={styles.soonBadge}>Soon</div>
-          </button>
-          <button className={styles.navItem}>
-            <i className="fas fa-envelope-open-text"></i>
-            <span>Email List</span>
-            <div className={styles.newBadge}>New</div>
-          </button>
+          <div className={styles.sectionTitle}>MAKE MONEY</div>
+          <Link href="/dashboard/products" className={styles.navItem}>
+            <i className="fas fa-box"></i>
+            <span>Products</span>
+          </Link>
+          <Link href="/dashboard/payments" className={styles.navItem}>
+            <i className="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </Link>
         </div>
 
         {/* Bottom Section */}
         <div className={styles.sidebarBottom}>
-          <button className={styles.navItem}>
+          <Link href="/dashboard/verified" className={styles.navItem}>
             <i className="fas fa-check-circle"></i>
             <span>Get Verified</span>
-          </button>
-          <button className={styles.navItem}>
+          </Link>
+          <Link href="/dashboard/help" className={styles.navItem}>
             <i className="fas fa-question-circle"></i>
             <span>Help Center</span>
-          </button>
+          </Link>
         </div>
       </aside>
 
