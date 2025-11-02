@@ -1307,62 +1307,22 @@ export default function DashboardPage() {
       <header className={styles.topBar}>
         <div className={styles.topBarLeft}>
           <div className={styles.topBarTabs}>
-            {/* Tools Dropdown */}
-            <div className={styles.dropdownWrapper}>
-          <button 
-                className={styles.topBarTab}
-                onClick={() => setShowToolsDropdown(!showToolsDropdown)}
-          >
-                <i className="fas fa-tools"></i>
-                <span>Tools</span>
-                <i className={`fas fa-chevron-down ${styles.dropdownIcon}`}></i>
-          </button>
-              
-              {showToolsDropdown && (
-                <>
-                  <div 
-                    className={styles.dropdownOverlay} 
-                    onClick={() => setShowToolsDropdown(false)}
-                  />
-                  <div className={styles.dropdownMenu}>
-                    <button 
-                      className={styles.dropdownItem}
-                      onClick={() => {
-                        openAddLinkSection();
-                        setShowToolsDropdown(false);
-                      }}
-                    >
-                      <i className="fas fa-link"></i>
-                      <span>Add Link</span>
-                    </button>
-                    <button 
-                      className={styles.dropdownItem}
-                      onClick={() => {
-                        openTemplatesModal();
-                        setShowToolsDropdown(false);
-                      }}
-                    >
-                      <i className="fas fa-palette"></i>
-                      <span>Templates</span>
-                    </button>
-                    <button 
-                      className={styles.dropdownItem}
-                      onClick={() => {
-                        openSocialsSection();
-                        setShowToolsDropdown(false);
-                      }}
-                    >
-                      <i className="fas fa-hashtag"></i>
-                      <span>Social Icons</span>
-                    </button>
-                  </div>
-                </>
-              )}
-        </div>
-        
-            <button className={`${styles.topBarTab} ${styles.topBarTabActive}`}>
+            <Link href="/dashboard" className={`${styles.topBarTab} ${styles.topBarTabActive}`}>
+              <i className="fas fa-user"></i>
               <span>Profile</span>
-          </button>
+            </Link>
+            <Link href="/dashboard/products" className={styles.topBarTab}>
+              <i className="fas fa-box"></i>
+              <span>Products</span>
+            </Link>
+            <Link href="/dashboard/analytics" className={styles.topBarTab}>
+              <i className="fas fa-chart-bar"></i>
+              <span>Analytics</span>
+            </Link>
+            <Link href="/dashboard/payments" className={styles.topBarTab}>
+              <i className="fas fa-credit-card"></i>
+              <span>Payments</span>
+            </Link>
           </div>
 
           {/* Action Buttons */}
