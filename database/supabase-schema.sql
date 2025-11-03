@@ -43,7 +43,14 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   verification_code VARCHAR(6) DEFAULT NULL,
   verification_code_expires TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  is_verified BOOLEAN DEFAULT FALSE
+  is_verified BOOLEAN DEFAULT FALSE,
+  -- Premium/Billing Fields
+  is_premium BOOLEAN DEFAULT FALSE,
+  premium_plan_type VARCHAR(20) DEFAULT NULL, -- 'monthly' or 'lifetime'
+  premium_started_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  premium_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL, -- NULL for lifetime, future date for monthly
+  stripe_customer_id VARCHAR(255) DEFAULT NULL,
+  stripe_subscription_id VARCHAR(255) DEFAULT NULL -- For monthly subscriptions
 );
 
 -- Create indexes for users table
@@ -138,6 +145,27 @@ CREATE TABLE IF NOT EXISTS social_links (
 CREATE INDEX IF NOT EXISTS idx_social_links_user_id ON social_links(user_id);
 
 -- ============================================================
+-- Table: billing_transactions
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS billing_transactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email VARCHAR(255) NOT NULL,
+  plan_type VARCHAR(20) NOT NULL, -- 'monthly' or 'lifetime'
+  amount NUMERIC(10,2) NOT NULL, -- Store in dollars (e.g., 3.99 or 14.99)
+  currency VARCHAR(3) DEFAULT 'usd',
+  status VARCHAR(50) DEFAULT 'succeeded', -- 'succeeded', 'pending', 'failed', 'refunded'
+  event_type VARCHAR(100) DEFAULT NULL, -- Stripe event type
+  external_id VARCHAR(255) UNIQUE NOT NULL, -- Stripe payment/session ID (UNIQUE to prevent duplicates)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for billing_transactions table
+CREATE INDEX IF NOT EXISTS idx_billing_transactions_email ON billing_transactions(email);
+CREATE INDEX IF NOT EXISTS idx_billing_transactions_created_at ON billing_transactions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_billing_transactions_external_id ON billing_transactions(external_id);
+
+-- ============================================================
 -- Row Level Security (RLS) Policies
 -- ============================================================
 
@@ -146,6 +174,7 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bio_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE social_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_transactions ENABLE ROW LEVEL SECURITY;
 
 -- Users table policies
 CREATE POLICY "Users can view their own data" ON users
@@ -217,6 +246,16 @@ CREATE POLICY "Users can update their own social links" ON social_links
 CREATE POLICY "Users can delete their own social links" ON social_links
   FOR DELETE USING (auth.uid()::text = user_id::text);
 
+-- Billing transactions table policies
+CREATE POLICY "Users can view their own billing transactions" ON billing_transactions
+  FOR SELECT USING (
+    email IN (SELECT email FROM users WHERE auth.uid()::text = id::text)
+  );
+
+-- Service role can insert transactions (for API/webhooks)
+CREATE POLICY "Service role can insert billing transactions" ON billing_transactions
+  FOR INSERT WITH CHECK (true);
+
 -- ============================================================
 -- Functions for public access (bypass RLS for API)
 -- ============================================================
@@ -272,7 +311,8 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
 DO $$
 BEGIN
   RAISE NOTICE '✅ Supabase schema created successfully!';
-  RAISE NOTICE '📊 Tables created: users, accounts, bio_links, social_links';
+  RAISE NOTICE '📊 Tables created: users, accounts, bio_links, social_links, billing_transactions';
+  RAISE NOTICE '💳 Premium and billing fields added to users table';
   RAISE NOTICE '🔒 Row Level Security enabled on all tables';
   RAISE NOTICE '🔑 Public access functions created';
 END $$;

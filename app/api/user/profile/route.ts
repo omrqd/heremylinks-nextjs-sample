@@ -26,6 +26,12 @@ interface User {
   bio_color: string | null;
   custom_text_color: string | null;
   is_published: boolean;
+  is_premium: boolean;
+  premium_plan_type: string | null;
+  premium_started_at: string | null;
+  premium_expires_at: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
 }
 
 // GET - Fetch user profile
@@ -41,7 +47,9 @@ export async function GET(request: NextRequest) {
       `SELECT id, username, email, name, bio, profile_image, hero_image, hero_height, hide_profile_picture,
               theme_color, background_color, template, background_image, background_video, 
               card_background_color, card_background_image, card_background_video, custom_text, 
-              username_color, bio_color, custom_text_color, is_published 
+              username_color, bio_color, custom_text_color, is_published,
+              is_premium, premium_plan_type, premium_started_at, premium_expires_at,
+              stripe_customer_id, stripe_subscription_id
        FROM users WHERE email = ? LIMIT 1`,
       [session.user.email]
     );
@@ -51,6 +59,14 @@ export async function GET(request: NextRequest) {
     if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    // Debug: Log premium fields
+    console.log('📋 Premium fields from DB:', {
+      is_premium: userProfile.is_premium,
+      premium_plan_type: userProfile.premium_plan_type,
+      premium_expires_at: userProfile.premium_expires_at,
+      stripe_subscription_id: userProfile.stripe_subscription_id,
+    });
 
     // Compute template-aware defaults
     const effectiveTemplate = userProfile.template || 'default';
@@ -83,6 +99,12 @@ export async function GET(request: NextRequest) {
         bioColor: userProfile.bio_color || '#6b7280',
         customTextColor: defaultCustomTextColor,
         isPublished: userProfile.is_published,
+        isPremium: userProfile.is_premium || false,
+        premiumPlanType: userProfile.premium_plan_type,
+        premiumStartedAt: userProfile.premium_started_at,
+        premiumExpiresAt: userProfile.premium_expires_at,
+        stripeCustomerId: userProfile.stripe_customer_id,
+        stripeSubscriptionId: userProfile.stripe_subscription_id,
       },
     });
   } catch (error) {

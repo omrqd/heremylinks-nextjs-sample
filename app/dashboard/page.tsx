@@ -241,6 +241,8 @@ export default function DashboardPage() {
   const [heroImage, setHeroImage] = useState('');
   const [heroHeight, setHeroHeight] = useState(300);
   const [hideProfilePicture, setHideProfilePicture] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumPlanType, setPremiumPlanType] = useState<string | null>(null);
   const [isResizingHero, setIsResizingHero] = useState(false);
   const [isHoveringMockup, setIsHoveringMockup] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -390,6 +392,13 @@ export default function DashboardPage() {
       }
 
       try {
+        // Check for pending payments first (in case user paid but didn't complete redirect)
+        try {
+          await fetch('/api/billing/check-payment-status', { method: 'POST' });
+        } catch (error) {
+          console.log('Payment check skipped:', error);
+        }
+
         // Load user profile
         const profileResponse = await fetch('/api/user/profile');
         let userData = null;
@@ -416,6 +425,8 @@ export default function DashboardPage() {
           );
           setBioColor(user.bioColor || '#6b7280');
           setCustomTextColor(user.customTextColor || '#4b5563');
+          setIsPremium(user.isPremium || false);
+          setPremiumPlanType(user.premiumPlanType || null);
           
           // Check if user has set a custom username (not auto-generated from email)
           // Auto-generated usernames are created from email prefix (e.g., mora.dxbuae@gmail.com -> moradxbuae)
@@ -1230,6 +1241,11 @@ export default function DashboardPage() {
         {/* Logo */}
         <div className={styles.sidebarLogo}>
           <Image src="/imgs/white-logo.png" alt="HereMyLinks" width={100} height={25} priority />
+          {isPremium && (
+            <div className={styles.proBadge}>
+              <span className={styles.proBadgeText}>PRO</span>
+            </div>
+          )}
         </div>
 
         {/* Navigation Menu */}
@@ -1263,10 +1279,16 @@ export default function DashboardPage() {
 
         {/* Bottom Section */}
         <div className={styles.sidebarBottom}>
-          <Link href="/dashboard/verified" className={styles.navItem}>
-            <i className="fas fa-check-circle"></i>
-            <span>Get Verified</span>
+          <Link href="/dashboard/billing" className={styles.navItem}>
+            <i className="fas fa-credit-card"></i>
+            <span>Billing</span>
           </Link>
+          {!isPremium && (
+          <Link href="/dashboard/verified" className={styles.navItem}>
+            <i className="fas fa-crown"></i>
+            <span>Get Premium</span>
+          </Link>
+          )}
           <Link href="/dashboard/help" className={styles.navItem}>
             <i className="fas fa-question-circle"></i>
             <span>Help Center</span>
