@@ -115,9 +115,12 @@ export default function AdminUsers() {
       name: user.name || '',
       username: user.username,
       email: user.email,
+      password: '',
+      confirmPassword: '',
       bio: user.bio || '',
       isPremium: user.is_premium,
       premiumPlanType: user.premium_plan_type || 'monthly',
+      isVerified: user.is_verified || false,
     });
     setEditModal(user);
   };
