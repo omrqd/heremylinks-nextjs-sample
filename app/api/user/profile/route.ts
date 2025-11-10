@@ -32,16 +32,32 @@ interface User {
   premium_expires_at: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  is_admin: boolean;
+  admin_role: string | null;
+  admin_permissions: string | null;
+  is_banned: boolean;
+  ban_reason: string | null;
+  banned_at: string | null;
 }
 
 // GET - Fetch user profile
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 /api/user/profile called');
     const session = await auth();
+    
+    console.log('📋 Session status:', {
+      exists: !!session,
+      hasUser: !!session?.user,
+      email: session?.user?.email || 'NO EMAIL',
+    });
 
     if (!session?.user?.email) {
+      console.log('❌ No session or email, returning 401');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    console.log('✅ Session valid, querying database for:', session.user.email);
 
     const [rows]: [User[], any] = await db.query(
       `SELECT id, username, email, name, bio, profile_image, hero_image, hero_height, hide_profile_picture,
@@ -49,7 +65,9 @@ export async function GET(request: NextRequest) {
               card_background_color, card_background_image, card_background_video, custom_text, 
               username_color, bio_color, custom_text_color, is_published,
               is_premium, premium_plan_type, premium_started_at, premium_expires_at,
-              stripe_customer_id, stripe_subscription_id
+              stripe_customer_id, stripe_subscription_id,
+              is_admin, admin_role, admin_permissions,
+              is_banned, ban_reason, banned_at
        FROM users WHERE email = ? LIMIT 1`,
       [session.user.email]
     );
@@ -60,12 +78,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Debug: Log premium fields
-    console.log('📋 Premium fields from DB:', {
+    // Debug: Log premium and admin fields
+    console.log('📋 Fields from DB:', {
       is_premium: userProfile.is_premium,
       premium_plan_type: userProfile.premium_plan_type,
-      premium_expires_at: userProfile.premium_expires_at,
-      stripe_subscription_id: userProfile.stripe_subscription_id,
+      is_admin: userProfile.is_admin,
+      admin_role: userProfile.admin_role,
     });
 
     // Compute template-aware defaults
@@ -105,6 +123,12 @@ export async function GET(request: NextRequest) {
         premiumExpiresAt: userProfile.premium_expires_at,
         stripeCustomerId: userProfile.stripe_customer_id,
         stripeSubscriptionId: userProfile.stripe_subscription_id,
+        isAdmin: userProfile.is_admin || false,
+        adminRole: userProfile.admin_role,
+        adminPermissions: userProfile.admin_permissions,
+        isBanned: userProfile.is_banned || false,
+        banReason: userProfile.ban_reason,
+        bannedAt: userProfile.banned_at,
       },
     });
   } catch (error) {

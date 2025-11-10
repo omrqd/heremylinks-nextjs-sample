@@ -7,6 +7,23 @@ import { cleanupDuplicateTransactions } from '@/lib/cleanup-duplicates';
 const stripeSecret = process.env.STRIPE_SECRET_KEY as string;
 const stripe = stripeSecret ? new Stripe(stripeSecret, { apiVersion: '2025-10-29.clover' }) : null;
 
+// Safely derive the current period end ISO string from Stripe types
+function getSubscriptionPeriodEndIso(
+  sub: Stripe.Subscription | Stripe.Response<Stripe.Subscription> | any
+): string | null {
+  try {
+    const ts =
+      typeof sub?.current_period_end === 'number'
+        ? sub.current_period_end
+        : typeof sub?.data?.current_period_end === 'number'
+          ? sub.data.current_period_end
+          : null;
+    return ts ? new Date(ts * 1000).toISOString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     if (!stripe) {
@@ -84,6 +101,7 @@ export async function POST(request: Request) {
     // Get subscription details if monthly
     let expiresAt: string | null = null;
     let subscriptionId: string | null = null;
+    let shouldUpgrade = true;
 
     if (planType === 'monthly' && latestPaidSession.subscription) {
       subscriptionId = typeof latestPaidSession.subscription === 'string'
@@ -91,13 +109,32 @@ export async function POST(request: Request) {
         : latestPaidSession.subscription.id;
 
       try {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        if (subscription.current_period_end) {
-          expiresAt = new Date(subscription.current_period_end * 1000).toISOString();
+        const subscriptionRes = await stripe.subscriptions.retrieve(subscriptionId);
+        expiresAt = getSubscriptionPeriodEndIso(subscriptionRes);
+        
+        // Check if subscription is actually active
+        const subData = subscriptionRes as Stripe.Subscription;
+        if (subData.status === 'canceled' || subData.status === 'incomplete' || subData.status === 'incomplete_expired' || subData.status === 'unpaid') {
+          console.log('⚠️ Subscription is not active (status:', subData.status, ') - skipping upgrade');
+          shouldUpgrade = false;
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Error retrieving subscription:', error);
+        // If subscription doesn't exist, don't upgrade
+        if (error.code === 'resource_missing') {
+          console.log('⚠️ Subscription not found in Stripe - skipping upgrade');
+          shouldUpgrade = false;
+        }
       }
+    }
+
+    // Only upgrade if subscription is active (or it's a lifetime plan)
+    if (!shouldUpgrade) {
+      console.log('ℹ️ Skipping user upgrade - subscription not active');
+      return NextResponse.json({ 
+        skipped: true, 
+        reason: 'subscription_not_active' 
+      });
     }
 
     // Update user premium status

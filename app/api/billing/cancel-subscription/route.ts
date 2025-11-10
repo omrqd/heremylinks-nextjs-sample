@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     // Get user's subscription ID
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .select('stripe_subscription_id, premium_plan_type')
+      .select('stripe_subscription_id, premium_plan_type, is_premium')
       .eq('email', session.user.email)
       .single();
 
@@ -36,39 +36,65 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Only monthly subscriptions can be cancelled' }, { status: 400 });
     }
 
-    // Cancel the subscription at period end
-    const subscription = await stripe.subscriptions.update(
-      user.stripe_subscription_id,
-      { cancel_at_period_end: true }
-    );
+    // Check if user is already cancelled
+    if (!user.is_premium) {
+      console.log('⚠️ User already downgraded, cleaning up subscription ID');
+      
+      // Clean up the subscription ID in database
+      await supabaseAdmin
+        .from('users')
+        .update({
+          stripe_subscription_id: null,
+          premium_plan_type: null,
+          premium_expires_at: null,
+        })
+        .eq('email', session.user.email);
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Subscription already cancelled.',
+        already_cancelled: true,
+      });
+    }
 
-    // Update user record to reflect cancellation
-    let expiresAt: string | null = null;
-    if (subscription.current_period_end) {
-      try {
-        expiresAt = new Date(subscription.current_period_end * 1000).toISOString();
-      } catch (error) {
-        console.error('Error converting expiry date:', error);
+    // Try to cancel the subscription in Stripe
+    let cancelled;
+    try {
+      cancelled = await stripe.subscriptions.cancel(user.stripe_subscription_id);
+      console.log('✅ Subscription cancelled in Stripe:', cancelled.id);
+    } catch (stripeError: any) {
+      // If subscription doesn't exist in Stripe (already deleted), that's okay
+      if (stripeError.code === 'resource_missing') {
+        console.log('⚠️ Subscription not found in Stripe, proceeding with local cleanup');
+        cancelled = null;
+      } else {
+        throw stripeError;
       }
     }
 
+    // Immediately downgrade the user
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
-        // Keep premium active until period end
-        premium_expires_at: expiresAt,
+        is_premium: false,
+        premium_plan_type: null,
+        premium_expires_at: null,
+        stripe_subscription_id: null,
       })
       .eq('email', session.user.email);
 
     if (updateError) {
-      console.error('Error updating user after cancellation:', updateError);
+      console.error('Error updating user after immediate cancellation:', updateError);
+      throw new Error('Failed to update user subscription status');
     }
+
+    console.log('✅ User downgraded successfully:', session.user.email);
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Subscription will be cancelled at the end of the billing period',
-      period_end: subscription.current_period_end,
-      expires_at: expiresAt
+      message: 'Subscription cancelled immediately. Premium access removed.',
+      cancelled_subscription_id: cancelled?.id || user.stripe_subscription_id,
+      status: cancelled?.status || 'canceled',
     });
   } catch (error: any) {
     console.error('Error cancelling subscription:', error);

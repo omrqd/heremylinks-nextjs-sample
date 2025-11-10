@@ -7,6 +7,23 @@ import { cleanupDuplicateTransactions } from '@/lib/cleanup-duplicates';
 const stripeSecret = process.env.STRIPE_SECRET_KEY as string;
 const stripe = stripeSecret ? new Stripe(stripeSecret, { apiVersion: '2025-10-29.clover' }) : null;
 
+// Safely derive the current period end ISO string from Stripe types
+function getSubscriptionPeriodEndIso(
+  sub: Stripe.Subscription | Stripe.Response<Stripe.Subscription> | any
+): string | null {
+  try {
+    const ts =
+      typeof sub?.current_period_end === 'number'
+        ? sub.current_period_end
+        : typeof sub?.data?.current_period_end === 'number'
+          ? sub.data.current_period_end
+          : null;
+    return ts ? new Date(ts * 1000).toISOString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     if (!stripe) {
@@ -66,28 +83,23 @@ export async function POST(request: Request) {
       
       // Retrieve subscription to get the current period end
       try {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        console.log('📅 Full subscription object:', JSON.stringify(subscription, null, 2));
+        const subscriptionRes = await stripe.subscriptions.retrieve(subscriptionId);
+        const periodEndIso = getSubscriptionPeriodEndIso(subscriptionRes);
         console.log('📅 Subscription retrieved:', {
-          id: subscription.id,
-          status: subscription.status,
-          current_period_end: subscription.current_period_end,
-          current_period_start: subscription.current_period_start,
-          current_period_end_date: subscription.current_period_end 
-            ? new Date(subscription.current_period_end * 1000).toISOString()
-            : null,
+          id: (subscriptionRes as any)?.id || (subscriptionRes as any)?.data?.id,
+          status: (subscriptionRes as any)?.status || (subscriptionRes as any)?.data?.status,
+          period_end_iso: periodEndIso,
         });
-        
-        if (subscription.current_period_end) {
-          const periodEndDate = new Date(subscription.current_period_end * 1000);
-          expiresAt = periodEndDate.toISOString();
+
+        if (periodEndIso) {
+          expiresAt = periodEndIso;
           console.log('✅ Expiry date set to:', expiresAt);
           console.log('✅ Expiry date type:', typeof expiresAt);
-          console.log('✅ Expiry date length:', expiresAt.length);
+          console.log('✅ Expiry date length:', (expiresAt || '').length);
         } else {
           console.warn('⚠️ No current_period_end found in subscription');
-          console.warn('⚠️ Subscription object keys:', Object.keys(subscription));
-          
+          console.warn('⚠️ Subscription object keys:', Object.keys(subscriptionRes));
+
           // Fallback: Set to 1 month from now
           const fallbackDate = new Date();
           fallbackDate.setMonth(fallbackDate.getMonth() + 1);

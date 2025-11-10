@@ -26,12 +26,27 @@ export default function LoginPage() {
   const [canResendCode, setCanResendCode] = useState(true);
   const [resendCountdown, setResendCountdown] = useState(0);
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to appropriate dashboard
   useEffect(() => {
-    if (status === 'authenticated') {
-      window.location.href = '/dashboard';
+    if (status === 'authenticated' && session?.user?.email) {
+      // Check if user is banned, admin, or regular user and redirect accordingly
+      fetch('/api/user/profile')
+        .then(res => res.json())
+        .then(data => {
+          if (data.user?.isBanned) {
+            window.location.href = '/banned';
+          } else if (data.user?.isAdmin) {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/dashboard';
+          }
+        })
+        .catch(() => {
+          // Fallback to dashboard on error
+          window.location.href = '/dashboard';
+        });
     }
-  }, [status]);
+  }, [status, session]);
 
   // Countdown timer for resend code rate limiting
   useEffect(() => {
@@ -264,7 +279,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/dashboard' });
+      await signIn('google', { callbackUrl: '/auth/callback' });
     } catch (error) {
       console.error('Google login error:', error);
       showToast('Google login failed', 'error');

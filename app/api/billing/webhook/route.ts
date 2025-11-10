@@ -69,8 +69,10 @@ export async function POST(request: Request) {
         break;
       }
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice;
+        console.log('💰 Processing invoice.payment_succeeded');
+        const invoice = event.data.object as any;
         let email = (invoice.customer_email as string | null) || null;
+        
         if (!email && typeof invoice.customer === 'string') {
           try {
             const cust = await stripe.customers.retrieve(invoice.customer);
@@ -79,8 +81,71 @@ export async function POST(request: Request) {
             console.warn('Failed to retrieve customer for invoice:', e);
           }
         }
+        
         if (email) {
+          console.log('📧 Processing invoice for:', email, 'Amount:', invoice.amount_paid);
+          
+          // Insert transaction record
           await insertTransaction(email, 'monthly', invoice.amount_paid || 0, 'invoice.payment_succeeded', invoice.id);
+          
+          // For subscription renewals, ensure user stays premium
+          if (invoice.subscription && invoice.billing_reason === 'subscription_cycle') {
+            console.log('🔄 Subscription renewal detected, ensuring user stays premium');
+            
+            try {
+              const subscriptionId = typeof invoice.subscription === 'string' 
+                ? invoice.subscription 
+                : invoice.subscription.id;
+              
+              const subscriptionRes = await stripe.subscriptions.retrieve(subscriptionId);
+              const expiresAt = getSubscriptionPeriodEndIso(subscriptionRes);
+              
+              // Update user to ensure they stay premium with new expiration date
+              const { error: updateError } = await supabaseAdmin
+                .from('users')
+                .update({
+                  is_premium: true,
+                  premium_plan_type: 'monthly',
+                  premium_expires_at: expiresAt,
+                  stripe_subscription_id: subscriptionId,
+                })
+                .eq('email', email);
+              
+              if (updateError) {
+                console.error('❌ Error updating user on renewal:', updateError);
+              } else {
+                console.log('✅ User premium renewed successfully:', email, 'Expires:', expiresAt);
+              }
+            } catch (e) {
+              console.error('❌ Error processing renewal:', e);
+            }
+          }
+        }
+        break;
+      }
+      case 'invoice.payment_failed': {
+        console.log('❌ Processing invoice.payment_failed');
+        const invoice = event.data.object as Stripe.Invoice;
+        let email = (invoice.customer_email as string | null) || null;
+        
+        if (!email && typeof invoice.customer === 'string') {
+          try {
+            const cust = await stripe.customers.retrieve(invoice.customer);
+            email = (cust as Stripe.Customer).email || null;
+          } catch (e) {
+            console.warn('Failed to retrieve customer for failed invoice:', e);
+          }
+        }
+        
+        if (email) {
+          console.log('⚠️ Payment failed for:', email);
+          
+          // Insert failed transaction record
+          await insertTransaction(email, 'monthly', invoice.amount_due || 0, 'invoice.payment_failed', invoice.id, 'failed');
+          
+          // For subscription payment failures, optionally notify user or take action
+          // Note: Stripe will retry failed payments automatically
+          console.log('⚠️ Payment failure recorded. Stripe will retry automatically.');
         }
         break;
       }
@@ -99,6 +164,28 @@ export async function POST(request: Request) {
           await markUserPremium(email, 'lifetime', pi);
           await insertTransaction(email, 'lifetime', pi.amount_received || 0, 'payment_intent.succeeded', pi.id);
         }
+        break;
+      }
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('🔁 Subscription updated:', {
+          id: subscription.id,
+          status: subscription.status,
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          period_end_iso: getSubscriptionPeriodEndIso(subscription),
+        });
+
+        await updateUserBySubscription(subscription);
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('🗑️ Subscription deleted:', {
+          id: subscription.id,
+          status: subscription.status,
+        });
+
+        await updateUserBySubscription(subscription);
         break;
       }
       default:
@@ -123,10 +210,8 @@ async function markUserPremium(email: string, planType: 'monthly' | 'lifetime', 
     try {
       subscriptionId = typeof source.subscription === 'string' ? source.subscription : source.subscription.id;
       if (stripe && subscriptionId) {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        if (subscription.current_period_end) {
-          expiresAt = new Date(subscription.current_period_end * 1000).toISOString();
-        }
+        const subscriptionRes = await stripe.subscriptions.retrieve(subscriptionId);
+        expiresAt = getSubscriptionPeriodEndIso(subscriptionRes);
       }
     } catch (error) {
       console.error('❌ Error retrieving subscription for expiry:', error);
@@ -160,8 +245,8 @@ async function markUserPremium(email: string, planType: 'monthly' | 'lifetime', 
   }
 }
 
-async function insertTransaction(email: string, planType: 'monthly' | 'lifetime', amount: number, eventType: string, externalId: string) {
-  console.log('💾 Webhook: Inserting transaction:', { email, planType, amount, eventType, externalId });
+async function insertTransaction(email: string, planType: 'monthly' | 'lifetime', amount: number, eventType: string, externalId: string, status: string = 'succeeded') {
+  console.log('💾 Webhook: Inserting transaction:', { email, planType, amount, eventType, externalId, status });
   try {
     // Check if transaction already exists (prevent duplicates)
     const { data: existingTransaction, error: checkError } = await supabaseAdmin
@@ -191,7 +276,7 @@ async function insertTransaction(email: string, planType: 'monthly' | 'lifetime'
       plan_type: planType,
         amount: amountInDollars,
       currency: 'usd',
-      status: 'succeeded',
+      status: status,
       event_type: eventType,
       external_id: externalId,
       created_at: new Date().toISOString(),
@@ -210,5 +295,89 @@ async function insertTransaction(email: string, planType: 'monthly' | 'lifetime'
     }
   } catch (e) {
     console.error('❌ Webhook: Failed to insert billing transaction:', e);
+  }
+}
+
+// Safely derive the current period end from various Stripe types
+function getSubscriptionPeriodEndIso(
+  sub: Stripe.Subscription | Stripe.Response<Stripe.Subscription> | any
+): string | null {
+  try {
+    const ts =
+      typeof sub?.current_period_end === 'number'
+        ? sub.current_period_end
+        : typeof sub?.data?.current_period_end === 'number'
+          ? sub.data.current_period_end
+          : null;
+    return ts ? new Date(ts * 1000).toISOString() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function updateUserBySubscription(subscription: Stripe.Subscription) {
+  try {
+    let customerId: string | null = null;
+    if (typeof subscription.customer === 'string') {
+      customerId = subscription.customer;
+    } else if ((subscription.customer as any)?.id) {
+      customerId = (subscription.customer as any).id;
+    }
+
+    if (!customerId) {
+      console.warn('⚠️ No customer ID on subscription:', subscription.id);
+      return;
+    }
+
+    let email: string | null = null;
+    try {
+      const cust = await stripe!.customers.retrieve(customerId);
+      email = (cust as Stripe.Customer).email || null;
+    } catch (e) {
+      console.warn('⚠️ Failed to retrieve Stripe customer:', e);
+    }
+
+    if (!email) {
+      console.warn('⚠️ No email found for subscription customer:', customerId);
+      return;
+    }
+
+    const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+    const expiresAt = getSubscriptionPeriodEndIso(subscription);
+
+    if (isActive) {
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update({
+          is_premium: true,
+          premium_plan_type: 'monthly',
+          premium_expires_at: expiresAt,
+          stripe_subscription_id: subscription.id,
+        })
+        .eq('email', email);
+      if (error) {
+        console.error('❌ Supabase error updating active subscription user:', error);
+      } else {
+        console.log('✅ User kept premium (active/trialing):', email);
+      }
+    } else {
+      // For canceled, unpaid, past_due, incomplete → downgrade immediately
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update({
+          is_premium: false,
+          premium_plan_type: null,
+          premium_expires_at: null,
+          stripe_subscription_id: null,
+        })
+        .eq('email', email);
+      if (error) {
+        console.error('❌ Supabase error downgrading user:', error);
+      } else {
+        console.log('✅ User downgraded due to subscription status:', { email, status: subscription.status });
+      }
+    }
+  } catch (e) {
+    console.error('❌ Failed to update user from subscription event:', e);
   }
 }

@@ -49,12 +49,56 @@ interface PublicBioPageProps {
   user: User;
   links: BioLink[];
   socials: SocialLink[];
+  isPremium: boolean;
 }
 
-export default function PublicBioPage({ user, links, socials }: PublicBioPageProps) {
+export default function PublicBioPage({ user, links, socials, isPremium }: PublicBioPageProps) {
   // Video refs for Safari compatibility
   const pageVideoRef = useRef<HTMLVideoElement>(null);
   const cardVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Page view tracking with heartbeat
+  useEffect(() => {
+    // Don't track page views when loaded in iframe (template previews)
+    const isInIframe = window.self !== window.top;
+    if (isInIframe) {
+      console.log('🚫 [Page View] Skipping tracking - page loaded in iframe (template preview)');
+      return;
+    }
+    
+    // Generate unique session ID
+    const sessionId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('👁️ [Page View] Initializing tracking for session:', sessionId);
+    
+    // Track initial page view
+    const trackPageView = async () => {
+      try {
+        await fetch('/api/track/page-view', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: user.username,
+            sessionId: sessionId,
+          }),
+        });
+        console.log('💚 [Page View] Heartbeat sent');
+      } catch (error) {
+        console.error('❌ [Page View] Tracking failed:', error);
+      }
+    };
+    
+    // Initial tracking
+    trackPageView();
+    
+    // Send heartbeat every 15 seconds to keep session alive
+    const heartbeatInterval = setInterval(trackPageView, 15000);
+    
+    // Cleanup on unmount
+    return () => {
+      console.log('👋 [Page View] Session ending:', sessionId);
+      clearInterval(heartbeatInterval);
+    };
+  }, [user.username]);
 
   // Safari video compatibility - ensure videos loop infinitely
   useEffect(() => {
@@ -93,15 +137,22 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
   }, [user.backgroundVideo, user.cardBackgroundVideo]);
 
   const handleLinkClick = async (linkId: string, url: string) => {
-    // Track link click (optional analytics)
-    try {
-      await fetch('/api/track/click', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ linkId }),
-      });
-    } catch (error) {
-      console.error('Failed to track click:', error);
+    // Don't track clicks when in iframe (template preview)
+    const isInIframe = window.self !== window.top;
+    
+    // Track link click (optional analytics) - skip if in iframe
+    if (!isInIframe) {
+      try {
+        await fetch('/api/track/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linkId }),
+        });
+      } catch (error) {
+        console.error('Failed to track click:', error);
+      }
+    } else {
+      console.log('🚫 [Link Click] Skipping tracking - in iframe (template preview)');
     }
 
     // Ensure URL has protocol
@@ -222,7 +273,7 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
 
           <h1 className={styles.profileName} style={{ color: user.usernameColor }}>
             {user.name}
-            {user.template === 'template3' && (
+            {user.template === 'template3' && isPremium && (
               <span className={styles.verifiedBadge}>
                 <i className="fas fa-check"></i>
               </span>
@@ -366,14 +417,40 @@ export default function PublicBioPage({ user, links, socials }: PublicBioPagePro
 
         {/* Footer */}
         <div className={styles.footer}>
-          <a href="/" className={styles.footerLink}>
-            <Image 
-              src={user.template === 'template3' ? "/imgs/white-logo.png" : "/imgs/logo.png"} 
-              alt="HereMyLinks" 
-              width={120} 
-              height={30} 
-            />
-          </a>
+          {!isPremium ? (
+            /* Promo Banner for Non-Premium Users */
+            <a 
+              href="https://heremylinks.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={styles.promoBanner}
+            >
+              <div className={styles.promoBannerContent}>
+                <Image 
+                  src={user.template === 'template3' ? "/imgs/white-logo.png" : "/imgs/logo.png"} 
+                  alt="HereMyLinks" 
+                  width={100} 
+                  height={25}
+                  className={styles.promoBannerLogo}
+                />
+                <div className={styles.promoBannerText}>
+                  <span className={styles.promoBannerTitle}>Create Your Own!</span>
+                  <span className={styles.promoBannerSubtitle}>Build beautiful bio link pages like this</span>
+                </div>
+                <i className="fas fa-arrow-right"></i>
+              </div>
+            </a>
+          ) : (
+            /* Regular Footer Link for Premium Users */
+            <a href="/" className={styles.footerLink}>
+              <Image 
+                src={user.template === 'template3' ? "/imgs/white-logo.png" : "/imgs/logo.png"} 
+                alt="HereMyLinks" 
+                width={120} 
+                height={30} 
+              />
+            </a>
+          )}
         </div>
       </div>
     </div>

@@ -243,6 +243,7 @@ export default function DashboardPage() {
   const [hideProfilePicture, setHideProfilePicture] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [premiumPlanType, setPremiumPlanType] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isResizingHero, setIsResizingHero] = useState(false);
   const [isHoveringMockup, setIsHoveringMockup] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -405,6 +406,14 @@ export default function DashboardPage() {
         if (profileResponse.ok) {
           const { user } = await profileResponse.json();
           userData = user;
+          
+          // Check if user is banned
+          if (user.isBanned) {
+            console.log('🚫 User is banned, redirecting to /banned');
+            router.push('/banned');
+            return;
+          }
+          
           setDisplayName(user.name || 'Your Name');
           setUsername(user.username || 'yourname');
           setBio(user.bio || 'Add your bio here');
@@ -427,6 +436,7 @@ export default function DashboardPage() {
           setCustomTextColor(user.customTextColor || '#4b5563');
           setIsPremium(user.isPremium || false);
           setPremiumPlanType(user.premiumPlanType || null);
+          setIsAdmin(user.isAdmin || false);
           
           // Check if user has set a custom username (not auto-generated from email)
           // Auto-generated usernames are created from email prefix (e.g., mora.dxbuae@gmail.com -> moradxbuae)
@@ -1257,10 +1267,12 @@ export default function DashboardPage() {
           <Link href="/dashboard/analytics" className={styles.navItem}>
             <i className="fas fa-chart-line"></i>
             <span>Analytics</span>
+            {!isPremium && <span className={styles.proBadgeSmall}>PRO</span>}
           </Link>
           <Link href="/dashboard/templates" className={styles.navItem}>
             <i className="fas fa-palette"></i>
             <span>Templates</span>
+            {!isPremium && <span className={styles.proBadgeSmall}>PRO</span>}
           </Link>
         </nav>
 
@@ -1279,6 +1291,15 @@ export default function DashboardPage() {
 
         {/* Bottom Section */}
         <div className={styles.sidebarBottom}>
+          {isAdmin && (
+            <Link href="/admin" className={styles.navItem} style={{ 
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
+              borderLeft: '3px solid #8b5cf6'
+            }}>
+              <i className="fas fa-shield-alt" style={{ color: '#8b5cf6' }}></i>
+              <span style={{ color: '#8b5cf6', fontWeight: '600' }}>Admin Dashboard</span>
+            </Link>
+          )}
           <Link href="/dashboard/billing" className={styles.navItem}>
             <i className="fas fa-credit-card"></i>
             <span>Billing</span>

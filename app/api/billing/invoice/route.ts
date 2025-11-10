@@ -75,7 +75,9 @@ export async function GET(request: Request) {
         ? checkoutSession.payment_intent
         : checkoutSession.payment_intent.id;
 
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+        expand: ['charges.data']
+      }) as any;
 
       // Get the charge to find receipt URL
       if (paymentIntent.charges?.data?.[0]) {

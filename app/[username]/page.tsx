@@ -26,6 +26,9 @@ interface User {
   bio_color: string | null;
   custom_text_color: string | null;
   is_published: boolean;
+  is_premium: boolean;
+  premium_expires_at: Date | null;
+  is_banned: boolean;
 }
 
 interface BioLink {
@@ -54,8 +57,9 @@ async function getUserByUsername(username: string): Promise<User | null> {
       `SELECT id, username, name, bio, profile_image, hero_image, hero_height, hide_profile_picture, 
               theme_color, background_color, template, background_image, background_video, 
               card_background_color, card_background_image, card_background_video, custom_text, 
-              username_color, bio_color, custom_text_color, is_published
-       FROM users WHERE LOWER(username) = LOWER(?) AND is_published = TRUE LIMIT 1`,
+              username_color, bio_color, custom_text_color, is_published, is_premium, premium_expires_at,
+              is_banned
+       FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1`,
       [username]
     );
 
@@ -118,8 +122,108 @@ export default async function UsernamePage({ params }: { params: { username: str
     notFound();
   }
 
+  // Check if user is banned
+  if (user.is_banned) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1e293b 0%, #dc2626 100%)',
+        padding: '20px',
+      }}>
+        <div style={{
+          maxWidth: '600px',
+          width: '100%',
+          background: 'rgba(15, 23, 42, 0.8)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '2px solid rgba(220, 38, 38, 0.3)',
+          padding: '48px',
+          textAlign: 'center',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            margin: '0 auto 24px',
+            background: 'rgba(220, 38, 38, 0.2)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <svg 
+              width="40" 
+              height="40" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="#ef4444" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+          </div>
+          
+          <h1 style={{
+            fontSize: '32px',
+            fontWeight: 'bold',
+            color: 'white',
+            marginBottom: '16px',
+          }}>
+            Page Not Available
+          </h1>
+          
+          <p style={{
+            fontSize: '18px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            lineHeight: '1.6',
+            marginBottom: '32px',
+          }}>
+            This profile is currently unavailable. Please check back later or contact support if you have any questions.
+          </p>
+          
+          <a
+            href="/"
+            style={{
+              display: 'inline-block',
+              padding: '12px 32px',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '12px',
+              fontWeight: '600',
+              fontSize: '16px',
+              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+            }}
+          >
+            Go to Homepage
+          </a>
+          <style dangerouslySetInnerHTML={{
+            __html: `
+              a[href="/"] {
+                transition: transform 0.2s, box-shadow 0.2s;
+              }
+              a[href="/"]:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4) !important;
+              }
+            `
+          }} />
+        </div>
+      </div>
+    );
+  }
+
   const links = await getUserLinks(user.id);
   const socials = await getUserSocials(user.id);
+
+  // Check if user has active premium (either lifetime or not expired)
+  const isPremiumActive = user.is_premium && (!user.premium_expires_at || new Date(user.premium_expires_at) > new Date());
 
   return (
     <PublicBioPage
@@ -161,6 +265,7 @@ export default async function UsernamePage({ params }: { params: { username: str
         url: social.url,
         icon: social.icon,
       }))}
+      isPremium={isPremiumActive}
     />
   );
 }

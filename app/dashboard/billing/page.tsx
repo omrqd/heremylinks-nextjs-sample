@@ -29,6 +29,7 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [subscriptionCancelled, setSubscriptionCancelled] = useState(false);
+  const [showResubscribeOption, setShowResubscribeOption] = useState(false);
 
   useEffect(() => {
     // Check for success/error messages
@@ -78,19 +79,28 @@ export default function BillingPage() {
         });
 
         // Check if subscription is cancelled by calling the API
-        if (user.isPremium && user.premiumPlanType === 'monthly' && user.stripeSubscriptionId) {
+        if (user.premiumPlanType === 'monthly' || user.stripeSubscriptionId) {
           try {
             const statusResponse = await fetch('/api/billing/subscription-status');
             if (statusResponse.ok) {
               const statusData = await statusResponse.json();
               console.log('🔍 Billing: Subscription status:', statusData);
-              setSubscriptionCancelled(statusData.cancel_at_period_end || false);
+              
+              // If subscription is canceled and user is not premium, show resubscribe option
+              if (statusData.status === 'canceled' && !user.isPremium) {
+                setShowResubscribeOption(true);
+                setSubscriptionCancelled(false); // Not actively cancelling since already cancelled
+              } else {
+                setSubscriptionCancelled(statusData.cancel_at_period_end || false);
+                setShowResubscribeOption(false);
+              }
             }
           } catch (error) {
             console.error('Error checking subscription status:', error);
           }
         } else {
           setSubscriptionCancelled(false);
+          setShowResubscribeOption(false);
         }
       }
 
@@ -150,19 +160,17 @@ export default function BillingPage() {
       if (response.ok && data.success) {
         console.log('✅ Subscription cancelled successfully:', data);
         
-        setMessage('✅ Subscription cancelled. You will retain access until the end of your billing period.');
-        setMessageType('success');
-        
-        // Update local state immediately
-        setSubscriptionCancelled(true);
-        
-        // Update the expires_at date if returned from API
-        if (data.expires_at) {
-          setUserPremium(prev => ({
-            ...prev,
-            premium_expires_at: data.expires_at,
-          }));
+        if (data.already_cancelled) {
+          setMessage('ℹ️ Subscription was already cancelled.');
+          setMessageType('success');
+        } else {
+          setMessage('✅ Subscription cancelled. Premium access removed.');
+          setMessageType('success');
         }
+        
+        // Update local state to show resubscribe option
+        setSubscriptionCancelled(false);
+        setShowResubscribeOption(true);
         
         // Small delay to let user see the message, then reload
         setTimeout(async () => {
@@ -232,10 +240,12 @@ export default function BillingPage() {
           <Link href="/dashboard/analytics" className={styles.navItem}>
             <i className="fas fa-chart-line"></i>
             <span>Analytics</span>
+            {!isPremium && <span className={styles.proBadgeSmall}>PRO</span>}
           </Link>
           <Link href="/dashboard/templates" className={styles.navItem}>
             <i className="fas fa-palette"></i>
             <span>Templates</span>
+            {!isPremium && <span className={styles.proBadgeSmall}>PRO</span>}
           </Link>
         </nav>
         <div className={styles.sidebarSection}>
@@ -328,7 +338,9 @@ export default function BillingPage() {
                   <div className={billingStyles.heroStatLabel}>Transactions</div>
                 </div>
                 <div className={billingStyles.heroStat}>
-                  <div className={billingStyles.heroStatValue}>{isPremium ? 'Active' : 'Inactive'}</div>
+                  <div className={billingStyles.heroStatValue}>
+                    {subscriptionCancelled ? 'Cancelling' : showResubscribeOption ? 'Cancelled' : isPremium ? 'Active' : 'Inactive'}
+                  </div>
                   <div className={billingStyles.heroStatLabel}>Status</div>
                 </div>
               </div>
@@ -364,20 +376,20 @@ export default function BillingPage() {
                 </div>
                 <div className={billingStyles.planStatus}>
                   <span className={`${billingStyles.statusBadge} ${
-                    subscriptionCancelled 
+                    subscriptionCancelled || showResubscribeOption
                       ? billingStyles.statusCancelled 
                       : isPremium 
                         ? billingStyles.statusActive 
                         : billingStyles.statusFree
                   }`}>
                     <i className={`fas ${
-                      subscriptionCancelled 
+                      subscriptionCancelled || showResubscribeOption
                         ? 'fa-exclamation-circle' 
                         : isPremium 
                           ? 'fa-check-circle' 
                           : 'fa-clock'
                     }`}></i>
-                    {subscriptionCancelled ? 'Cancelled' : isPremium ? 'Active' : 'Free'}
+                    {subscriptionCancelled ? 'Cancelling' : showResubscribeOption ? 'Cancelled' : isPremium ? 'Active' : 'Free'}
                   </span>
                 </div>
               </div>
@@ -450,7 +462,26 @@ export default function BillingPage() {
 
               {/* Enhanced Plan Actions */}
               <div className={billingStyles.planActions}>
-                {!isPremium ? (
+                {showResubscribeOption ? (
+                  <div className={billingStyles.upgradeSection}>
+                    <div className={billingStyles.cancelledInfo}>
+                      <div className={billingStyles.cancelledIcon}>
+                        <i className="fas fa-info-circle"></i>
+                      </div>
+                      <div className={billingStyles.cancelledContent}>
+                        <h4 className={billingStyles.cancelledTitle}>Subscription Cancelled</h4>
+                        <p className={billingStyles.cancelledText}>
+                          Your subscription has been cancelled. You can resubscribe anytime to regain access to all premium features.
+                        </p>
+                      </div>
+                    </div>
+                    <Link href="/dashboard/verified" className={billingStyles.resubscribeButton}>
+                      <i className="fas fa-redo"></i>
+                      <span>Resubscribe to Premium</span>
+                      <i className="fas fa-arrow-right"></i>
+                    </Link>
+                  </div>
+                ) : !isPremium ? (
                   <div className={billingStyles.upgradeSection}>
                     <div className={billingStyles.upgradeContent}>
                       <h4 className={billingStyles.upgradeTitle}>Ready to upgrade?</h4>
@@ -495,7 +526,7 @@ export default function BillingPage() {
                           >
                             <i className={`fas ${cancelling ? 'fa-spinner fa-spin' : 'fa-times'}`}></i>
                             <span>{cancelling ? 'Cancelling...' : 'Cancel Subscription'}</span>
-                          </button>
+                        </button>
                         ) : (
                           <div className={billingStyles.lifetimeInfo}>
                             <i className="fas fa-infinity"></i>
@@ -610,9 +641,9 @@ export default function BillingPage() {
                               onClick={() => handleDownloadInvoice(t.external_id)}
                               title="Download invoice"
                             >
-                              <i className="fas fa-download"></i>
+                            <i className="fas fa-download"></i>
                               Invoice
-                            </button>
+                          </button>
                           </td>
                         </tr>
                     ))}

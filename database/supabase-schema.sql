@@ -257,6 +257,107 @@ CREATE POLICY "Service role can insert billing transactions" ON billing_transact
   FOR INSERT WITH CHECK (true);
 
 -- ============================================================
+-- Table: link_analytics
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS link_analytics (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  link_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  
+  -- Visitor Information
+  visitor_ip VARCHAR(45) NOT NULL, -- Supports IPv4 and IPv6
+  visitor_country VARCHAR(100) DEFAULT NULL,
+  visitor_city VARCHAR(100) DEFAULT NULL,
+  visitor_region VARCHAR(100) DEFAULT NULL,
+  
+  -- Device Information
+  user_agent TEXT DEFAULT NULL,
+  device_type VARCHAR(50) DEFAULT NULL, -- 'desktop', 'mobile', 'tablet'
+  browser VARCHAR(100) DEFAULT NULL,
+  os VARCHAR(100) DEFAULT NULL,
+  
+  -- Referrer Information
+  referrer TEXT DEFAULT NULL,
+  
+  -- Timestamp
+  clicked_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  
+  -- Constraints
+  CONSTRAINT link_analytics_link_id_fkey FOREIGN KEY (link_id) REFERENCES bio_links(id) ON DELETE CASCADE,
+  CONSTRAINT link_analytics_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Create indexes for link_analytics table
+CREATE INDEX IF NOT EXISTS idx_link_analytics_link_id ON link_analytics(link_id);
+CREATE INDEX IF NOT EXISTS idx_link_analytics_user_id ON link_analytics(user_id);
+CREATE INDEX IF NOT EXISTS idx_link_analytics_clicked_at ON link_analytics(clicked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_link_analytics_visitor_ip ON link_analytics(visitor_ip);
+CREATE INDEX IF NOT EXISTS idx_link_analytics_user_link ON link_analytics(user_id, link_id);
+CREATE INDEX IF NOT EXISTS idx_link_analytics_unique_visitor ON link_analytics(link_id, visitor_ip, clicked_at);
+
+-- Enable RLS on link_analytics table
+ALTER TABLE link_analytics ENABLE ROW LEVEL SECURITY;
+
+-- Link analytics policies
+CREATE POLICY "Users can view their own link analytics" ON link_analytics
+  FOR SELECT USING (auth.uid()::text = user_id::text);
+
+CREATE POLICY "Anyone can insert link analytics" ON link_analytics
+  FOR INSERT WITH CHECK (true);
+
+-- ============================================================
+-- Table: page_views (for tracking profile page visitors)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS page_views (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL,
+  
+  -- Visitor Information
+  visitor_ip VARCHAR(45) NOT NULL,
+  session_id VARCHAR(255) NOT NULL,
+  
+  -- Visitor Details
+  visitor_country VARCHAR(100) DEFAULT NULL,
+  visitor_city VARCHAR(100) DEFAULT NULL,
+  visitor_region VARCHAR(100) DEFAULT NULL,
+  
+  -- Device Information
+  user_agent TEXT DEFAULT NULL,
+  device_type VARCHAR(50) DEFAULT NULL,
+  browser VARCHAR(100) DEFAULT NULL,
+  os VARCHAR(100) DEFAULT NULL,
+  
+  -- Referrer
+  referrer TEXT DEFAULT NULL,
+  
+  -- Timestamps
+  first_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  last_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  
+  -- Constraints
+  CONSTRAINT page_views_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT unique_session UNIQUE (user_id, session_id)
+);
+
+-- Create indexes for page_views
+CREATE INDEX IF NOT EXISTS idx_page_views_user_id ON page_views(user_id);
+CREATE INDEX IF NOT EXISTS idx_page_views_last_seen ON page_views(last_seen DESC);
+CREATE INDEX IF NOT EXISTS idx_page_views_session ON page_views(session_id);
+CREATE INDEX IF NOT EXISTS idx_page_views_visitor_ip ON page_views(visitor_ip);
+
+-- Enable RLS on page_views
+ALTER TABLE page_views ENABLE ROW LEVEL SECURITY;
+
+-- Page views policies
+CREATE POLICY "Users can view their own page views" ON page_views
+  FOR SELECT USING (auth.uid()::text = user_id::text);
+
+CREATE POLICY "Anyone can insert/update page views" ON page_views
+  FOR ALL WITH CHECK (true);
+
+-- ============================================================
 -- Functions for public access (bypass RLS for API)
 -- ============================================================
 

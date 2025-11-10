@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import styles from "../dashboard.module.css";
+import styles from "./TemplateChoice.module.css";
 
 type TemplateId = "template1" | "template3";
 

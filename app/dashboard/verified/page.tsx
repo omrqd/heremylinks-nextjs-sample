@@ -112,10 +112,12 @@ export default function GetPremiumPage() {
           <Link href="/dashboard/analytics" className={styles.navItem}>
             <i className="fas fa-chart-line"></i>
             <span>Analytics</span>
+            {!isPremium && <span className={styles.proBadgeSmall}>PRO</span>}
           </Link>
           <Link href="/dashboard/templates" className={styles.navItem}>
             <i className="fas fa-palette"></i>
             <span>Templates</span>
+            {!isPremium && <span className={styles.proBadgeSmall}>PRO</span>}
           </Link>
         </nav>
         <div className={styles.sidebarSection}>

@@ -1,0 +1,728 @@
+/* Premium Template Choice Modal Styles */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.modal {
+    background: linear-gradient(145deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    border-radius: 32px;
+    max-width: 950px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 
+        0 50px 100px rgba(0, 0, 0, 0.8),
+        0 0 80px rgba(147, 51, 234, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modalHeader {
+    text-align: center;
+    padding: 60px 40px 32px;
+    background: linear-gradient(135deg, #9333ea 0%, #db2777 50%, #f59e0b 100%);
+    color: white;
+    border-radius: 32px 32px 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.modalHeader::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+    animation: float 12s ease-in-out infinite;
+}
+
+.modalHeader::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 25%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0.3) 75%,
+        transparent 100%
+    );
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    33% {
+        transform: translate(-40px, -40px) rotate(120deg);
+    }
+    66% {
+        transform: translate(40px, -20px) rotate(240deg);
+    }
+}
+
+.modalTitle {
+    font-size: 42px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -1px;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(to bottom, #ffffff 0%, rgba(255, 255, 255, 0.9) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.modalBody {
+    padding: 48px 40px;
+    background: linear-gradient(to bottom, rgba(26, 26, 46, 0.3) 0%, transparent 100%);
+}
+
+.modalDescription {
+    text-align: center;
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 48px 0;
+    font-weight: 500;
+    line-height: 1.7;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.templatesGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+    margin: 0;
+}
+
+.templateCard {
+    background: linear-gradient(145deg, rgba(26, 26, 46, 0.6) 0%, rgba(10, 10, 10, 0.8) 100%);
+    border: 2px solid rgba(147, 51, 234, 0.2);
+    border-radius: 24px;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+}
+
+.templateCard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: 2px;
+    background: linear-gradient(135deg, #9333ea 0%, #db2777 50%, #f59e0b 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.templateCard::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    background: radial-gradient(circle at top right, rgba(147, 51, 234, 0.1) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.templateCard:hover {
+    transform: translateY(-12px) scale(1.03);
+    box-shadow: 
+        0 25px 60px rgba(147, 51, 234, 0.4),
+        0 0 60px rgba(147, 51, 234, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-color: rgba(147, 51, 234, 0.5);
+}
+
+.templateCard:hover::before {
+    opacity: 1;
+}
+
+.templateCard:hover::after {
+    opacity: 1;
+}
+
+.templateCard:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.templateCard:disabled:hover {
+    transform: none;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.templateCardActive {
+    border-color: rgba(147, 51, 234, 0.8);
+    background: linear-gradient(145deg, rgba(147, 51, 234, 0.15) 0%, rgba(219, 39, 119, 0.1) 100%);
+    box-shadow: 
+        0 25px 60px rgba(147, 51, 234, 0.5),
+        0 0 80px rgba(147, 51, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.templateCardActive::before {
+    opacity: 1;
+}
+
+.templateCardActive::after {
+    content: '✓';
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 
+        0 6px 20px rgba(147, 51, 234, 0.6),
+        0 0 30px rgba(147, 51, 234, 0.4);
+    z-index: 10;
+    animation: checkBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes checkBounce {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.templatePreview {
+    width: 100%;
+    height: 340px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, rgba(15, 15, 30, 0.8) 0%, rgba(25, 25, 45, 0.6) 100%);
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+}
+
+.templatePreview::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(147, 51, 234, 0.1) 0%, transparent 70%);
+}
+
+/* Classic Template Preview Styles */
+.templatePreviewBold {
+    width: 190px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 32px;
+    background: linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%);
+    border-radius: 20px;
+    box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.4),
+        0 0 30px rgba(147, 51, 234, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    position: relative;
+    z-index: 1;
+}
+
+.previewCircle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #000000 0%, #1a1a1a 100%);
+    border: 4px solid #ffffff;
+    box-shadow: 
+        0 6px 16px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.previewLine {
+    width: 85px;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #e5e7eb 0%, #d1d5db 100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.previewButtonBold {
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #000000 0%, #1a1a1a 100%);
+    border: 3px solid #000000;
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Influencer Hero Template Preview Styles */
+.templatePreviewHero {
+    position: relative;
+    width: 190px;
+    aspect-ratio: 9 / 16;
+    background: linear-gradient(145deg, #000000 0%, #0f0f1a 100%);
+    border-radius: 20px;
+    overflow: hidden;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.6),
+        0 0 30px rgba(147, 51, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(147, 51, 234, 0.2);
+}
+
+.previewHeroImage {
+    width: calc(100% + 36px);
+    height: 45%;
+    background: linear-gradient(135deg, #9333ea 0%, #db2777 50%, #f59e0b 100%);
+    border-radius: 20px 20px 0 0;
+    margin: -18px -18px 0 -18px;
+    position: relative;
+}
+
+.previewHeroImage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+}
+
+.previewHeroImage::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.9));
+}
+
+.templatePreviewHero .previewCircle {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%);
+    border-radius: 50%;
+    margin: 14px auto 10px;
+    z-index: 2;
+    border: 3px solid rgba(0, 0, 0, 0.8);
+    box-shadow: 
+        0 6px 16px rgba(255, 255, 255, 0.3),
+        0 0 20px rgba(147, 51, 234, 0.4);
+}
+
+.templatePreviewHero .previewLine {
+    position: relative;
+    width: 70%;
+    height: 5px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+    border-radius: 3px;
+    margin: 0 auto 8px;
+    z-index: 2;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.previewGridCards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.previewGridCard {
+    width: 100%;
+    height: 38px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 245, 245, 0.95) 100%);
+    border-radius: 10px;
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        0 0 15px rgba(147, 51, 234, 0.1);
+}
+
+.templateInfo {
+    padding: 32px 28px;
+    text-align: center;
+    background: linear-gradient(to bottom, rgba(26, 26, 46, 0.4) 0%, rgba(10, 10, 10, 0.6) 100%);
+    border-top: 1px solid rgba(147, 51, 234, 0.2);
+}
+
+.templateName {
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.85) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.templateDescription {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.65);
+    margin: 0;
+    line-height: 1.6;
+    font-weight: 500;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.modalFooter {
+    padding: 28px 40px 48px;
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    background: linear-gradient(to bottom, transparent 0%, rgba(10, 10, 10, 0.5) 100%);
+    border-top: 1px solid rgba(147, 51, 234, 0.1);
+}
+
+.secondaryBtn,
+.primaryBtn {
+    padding: 18px 48px;
+    font-size: 17px;
+    font-weight: 700;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border: none;
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: -0.3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.secondaryBtn {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+    border: 2px solid rgba(147, 51, 234, 0.3);
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.secondaryBtn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(219, 39, 119, 0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.secondaryBtn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(147, 51, 234, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 
+        0 8px 20px rgba(147, 51, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.secondaryBtn:hover:not(:disabled)::before {
+    opacity: 1;
+}
+
+.primaryBtn {
+    background: linear-gradient(135deg, #9333ea 0%, #db2777 50%, #f59e0b 100%);
+    color: white;
+    box-shadow: 
+        0 6px 24px rgba(147, 51, 234, 0.5),
+        0 0 40px rgba(147, 51, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.primaryBtn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.primaryBtn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 
+        0 10px 32px rgba(147, 51, 234, 0.6),
+        0 0 60px rgba(147, 51, 234, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.primaryBtn:hover:not(:disabled)::before {
+    opacity: 1;
+}
+
+.primaryBtn:disabled,
+.secondaryBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.primaryBtn:disabled::before,
+.secondaryBtn:disabled::before {
+    opacity: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal {
+        border-radius: 24px;
+        max-width: 95%;
+    }
+
+    .modalHeader {
+        padding: 40px 32px 20px;
+    }
+
+    .modalTitle {
+        font-size: 28px;
+    }
+
+    .modalBody {
+        padding: 32px 24px;
+    }
+
+    .modalDescription {
+        font-size: 15px;
+        margin-bottom: 32px;
+    }
+
+    .templatesGrid {
+        gap: 24px;
+    }
+
+    .templatePreview {
+        height: 280px;
+        padding: 20px;
+    }
+
+    .templatePreviewBold {
+        width: 150px;
+        padding: 24px;
+    }
+
+    .templatePreviewHero {
+        width: 150px;
+    }
+
+    .templateInfo {
+        padding: 24px 20px;
+    }
+
+    .templateName {
+        font-size: 20px;
+    }
+
+    .templateDescription {
+        font-size: 14px;
+    }
+
+    .modalFooter {
+        padding: 20px 24px 32px;
+        flex-direction: column;
+    }
+
+    .secondaryBtn,
+    .primaryBtn {
+        width: 100%;
+        padding: 14px 32px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .templatesGrid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .templateCard {
+        max-width: 100%;
+    }
+
+    .templatePreview {
+        height: 300px;
+    }
+
+    .templatePreviewBold {
+        width: 160px;
+    }
+
+    .templatePreviewHero {
+        width: 160px;
+    }
+
+    .modalHeader {
+        padding: 32px 24px 16px;
+    }
+
+    .modalTitle {
+        font-size: 24px;
+    }
+
+    .modalBody {
+        padding: 24px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal {
+        border-radius: 20px;
+        max-height: 95vh;
+    }
+
+    .modalHeader {
+        padding: 28px 20px 16px;
+    }
+
+    .modalTitle {
+        font-size: 22px;
+    }
+
+    .modalBody {
+        padding: 20px 16px;
+    }
+
+    .modalDescription {
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .templatesGrid {
+        gap: 16px;
+    }
+
+    .templatePreview {
+        height: 260px;
+        padding: 16px;
+    }
+
+    .templatePreviewBold {
+        width: 140px;
+        padding: 20px;
+        gap: 10px;
+    }
+
+    .previewCircle {
+        width: 48px;
+        height: 48px;
+    }
+
+    .previewLine {
+        width: 70px;
+        height: 4px;
+    }
+
+    .previewButtonBold {
+        height: 38px;
+    }
+
+    .templatePreviewHero {
+        width: 140px;
+    }
+
+    .previewGridCard {
+        height: 32px;
+    }
+
+    .templateInfo {
+        padding: 20px 16px;
+    }
+
+    .templateName {
+        font-size: 18px;
+    }
+
+    .templateDescription {
+        font-size: 13px;
+    }
+
+    .modalFooter {
+        padding: 16px 16px 24px;
+        gap: 12px;
+    }
+
+    .secondaryBtn,
+    .primaryBtn {
+        padding: 12px 24px;
+        font-size: 15px;
+        border-radius: 12px;
+    }
+}
+

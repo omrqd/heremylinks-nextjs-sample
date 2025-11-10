@@ -971,3 +971,130 @@
         gap: 12px;
     }
 }
+
+/* ==================== PROMO BANNER IN FOOTER FOR NON-PREMIUM USERS ==================== */
+.promoBanner {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    border-radius: 16px;
+    padding: 18px 20px;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.promoBanner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.promoBannerContent {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+}
+
+.promoBannerLogo {
+    flex-shrink: 0;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+}
+
+.promoBanner:hover .promoBannerLogo {
+    opacity: 1;
+}
+
+.promoBannerText {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.promoBannerTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+    display: block;
+}
+
+.promoBannerSubtitle {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    display: block;
+    line-height: 1.4;
+}
+
+.promoBannerContent > i {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.promoBanner:hover .promoBannerContent > i {
+    color: rgba(255, 255, 255, 0.9);
+    transform: translateX(4px);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .promoBanner {
+        padding: 16px 18px;
+        border-radius: 14px;
+    }
+
+    .promoBannerContent {
+        gap: 14px;
+    }
+
+    .promoBannerLogo {
+        width: 90px !important;
+        height: 22px !important;
+    }
+
+    .promoBannerTitle {
+        font-size: 15px;
+    }
+
+    .promoBannerSubtitle {
+        font-size: 12px;
+    }
+
+    .promoBannerContent > i {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .promoBanner {
+        padding: 14px 16px;
+        border-radius: 12px;
+    }
+
+    .promoBannerContent {
+        gap: 12px;
+    }
+
+    .promoBannerLogo {
+        width: 80px !important;
+        height: 20px !important;
+    }
+
+    .promoBannerTitle {
+        font-size: 14px;
+    }
+
+    .promoBannerSubtitle {
+        font-size: 11px;
+    }
+
+    .promoBannerContent > i {
+        font-size: 13px;
+    }
+}

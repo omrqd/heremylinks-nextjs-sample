@@ -21,9 +21,15 @@ export async function POST(request: Request) {
 
     const user = rows[0];
     
+    console.log('Check verification - User found:', {
+      id: user.id,
+      is_verified: user.is_verified,
+      is_verified_type: typeof user.is_verified
+    });
+    
     return NextResponse.json({
       exists: true,
-      isVerified: user.is_verified === 1
+      isVerified: user.is_verified === true || user.is_verified === 1
     });
   } catch (error) {
     console.error('Error checking verification status:', error);
