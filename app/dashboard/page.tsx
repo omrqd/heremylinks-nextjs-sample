@@ -262,6 +262,8 @@ export default function DashboardPage() {
   const [showSocialIconsModal, setShowSocialIconsModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [recentNotifications, setRecentNotifications] = useState<any[]>([]);
   
   // Publish modal states
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -482,6 +484,37 @@ export default function DashboardPage() {
 
     loadUserData();
   }, [session, status, router]);
+
+  // Load notifications
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (status !== 'authenticated') return;
+      
+      try {
+        // Get unread count
+        const countResponse = await fetch('/api/notifications/unread-count');
+        if (countResponse.ok) {
+          const { count } = await countResponse.json();
+          setUnreadNotifications(count);
+        }
+        
+        // Get recent notifications (latest 5)
+        const notificationsResponse = await fetch('/api/notifications?limit=5');
+        if (notificationsResponse.ok) {
+          const { notifications } = await notificationsResponse.json();
+          setRecentNotifications(notifications || []);
+        }
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      }
+    };
+    
+    loadNotifications();
+    
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [status]);
 
   // Safari video compatibility - ensure videos loop infinitely
   useEffect(() => {
@@ -1697,8 +1730,32 @@ export default function DashboardPage() {
               className={styles.topBarIcon} 
               title="Notifications"
               onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+              style={{ position: 'relative' }}
             >
               <i className="fas fa-bell"></i>
+              {unreadNotifications > 0 && (
+                <span 
+                  style={{
+                    position: 'absolute',
+                    top: '5px',
+                    right: '5px',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    borderRadius: '9999px',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    minWidth: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px',
+                    border: '2px solid white',
+                  }}
+                >
+                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                </span>
+              )}
             </button>
             
             {showNotificationsDropdown && (
@@ -1710,24 +1767,104 @@ export default function DashboardPage() {
                 <div className={styles.notificationsDropdown}>
                   <div className={styles.notificationsHeader}>
                     <h3>Notifications</h3>
+                    {unreadNotifications > 0 && (
+                      <span style={{ color: '#8B5CF6', fontSize: '12px' }}>
+                        {unreadNotifications} new
+                      </span>
+                    )}
                   </div>
                   <div className={styles.notificationsList}>
-                    <div className={styles.notificationItem}>
-                      <div className={styles.notificationIcon}>
-                        <i className="fas fa-info-circle"></i>
+                    {recentNotifications.length === 0 ? (
+                      <div style={{ 
+                        textAlign: 'center', 
+                        padding: '40px 20px', 
+                        color: '#94a3b8' 
+                      }}>
+                        <i className="fas fa-bell-slash" style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.5 }}></i>
+                        <p style={{ fontSize: '14px' }}>No notifications yet</p>
                       </div>
-                      <div className={styles.notificationContent}>
-                        <p className={styles.notificationText}>Welcome to HereMyLinks! 🎉</p>
-                        <span className={styles.notificationTime}>Just now</span>
-                      </div>
-                    </div>
-                    {/* Add more notifications here when available */}
+                    ) : (
+                      recentNotifications.map((notification) => (
+                        <div 
+                          key={notification.id} 
+                          className={styles.notificationItem}
+                          style={{ 
+                            opacity: notification.is_read ? 0.6 : 1,
+                            backgroundColor: notification.is_read ? 'transparent' : 'rgba(139, 92, 246, 0.05)'
+                          }}
+                          onClick={async () => {
+                            // Mark as read
+                            if (!notification.is_read) {
+                              try {
+                                const response = await fetch(`/api/notifications/${notification.id}/read`, {
+                                  method: 'PATCH',
+                                });
+                                
+                                if (response.ok) {
+                                  // Update local state
+                                  setRecentNotifications(prev => 
+                                    prev.map(n => 
+                                      n.id === notification.id ? { ...n, is_read: true } : n
+                                    )
+                                  );
+                                  // Update unread count
+                                  setUnreadNotifications(prev => Math.max(0, prev - 1));
+                                }
+                              } catch (error) {
+                                console.error('Error marking as read:', error);
+                              }
+                            }
+                            // Navigate if there's a link
+                            if (notification.link) {
+                              window.open(notification.link, '_blank');
+                            }
+                          }}
+                        >
+                          <div className={styles.notificationIcon}>
+                            <i className={`fas ${
+                              notification.type === 'success' ? 'fa-check-circle' :
+                              notification.type === 'warning' ? 'fa-exclamation-triangle' :
+                              notification.type === 'error' ? 'fa-times-circle' :
+                              'fa-info-circle'
+                            }`}></i>
+                          </div>
+                          <div className={styles.notificationContent}>
+                            <p className={styles.notificationText}>
+                              <strong>{notification.title}</strong>
+                              {!notification.is_read && (
+                                <span style={{ 
+                                  display: 'inline-block',
+                                  width: '6px',
+                                  height: '6px',
+                                  backgroundColor: '#8B5CF6',
+                                  borderRadius: '50%',
+                                  marginLeft: '8px'
+                                }}></span>
+                              )}
+                            </p>
+                            <p style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px' }}>
+                              {notification.message.length > 80 
+                                ? notification.message.substring(0, 80) + '...' 
+                                : notification.message}
+                            </p>
+                            <span className={styles.notificationTime}>
+                              {new Date(notification.created_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                   <button 
                     className={styles.notificationsViewAll}
                     onClick={() => {
                       setShowNotificationsDropdown(false);
-                      // Navigate to notifications page when implemented
+                      router.push('/dashboard/notifications');
                     }}
                   >
                     Show all notifications
