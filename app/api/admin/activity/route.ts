@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
+interface ActivityLog {
+  id: string;
+  type: string;
+  user: {
+    email: string;
+    name: string;
+  };
+  timestamp: string;
+  description: string;
+}
+
 export async function GET() {
   try {
     const session = await auth();
@@ -59,7 +70,7 @@ export async function GET() {
     }
 
     // Combine and format activity logs
-    const activityLogs = [];
+    const activityLogs: ActivityLog[] = [];
 
     // Add signups
     if (recentSignups) {
