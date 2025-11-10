@@ -65,11 +65,13 @@ export default function AuthCallback() {
           }
         } catch (error) {
           console.error('❌ Error checking admin status:', error);
-          console.error('Full error details:', {
-            message: error.message,
-            stack: error.stack,
-            type: error.constructor.name,
-          });
+          if (error instanceof Error) {
+            console.error('Full error details:', {
+              message: error.message,
+              stack: error.stack,
+              type: error.constructor.name,
+            });
+          }
           // Fallback to dashboard on error
           console.log('⚠️ Falling back to /dashboard due to error');
           window.location.href = '/dashboard';
