@@ -17,6 +17,7 @@ interface User {
   bio: string | null;
   is_admin: boolean;
   is_published: boolean;
+  is_verified: boolean;
   is_banned: boolean;
   ban_reason: string | null;
   banned_at: string | null;
