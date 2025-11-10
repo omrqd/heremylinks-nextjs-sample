@@ -10,6 +10,8 @@ import ConfirmModal from '@/components/ConfirmModal';
 
 export const dynamic = 'force-dynamic';
 
+export const dynamic = 'force-dynamic';
+
 function formatAmount(cents?: number, currency?: string) {
   if (!cents && cents !== 0) return '-';
   const amount = (cents as number) / 100;
