@@ -7,6 +7,8 @@ import premiumStyles from './premium-modern.module.css';
 import Link from 'next/link';
 import Image from 'next/image';
 
+export const dynamic = 'force-dynamic';
+
 export default function GetPremiumPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
