@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from '../dashboard.module.css';
 import billingStyles from './billing-modern.module.css';
@@ -8,15 +8,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import ConfirmModal from '@/components/ConfirmModal';
 
-export const dynamic = 'force-dynamic';
-
 function formatAmount(cents?: number, currency?: string) {
   if (!cents && cents !== 0) return '-';
   const amount = (cents as number) / 100;
   return `${currency?.toUpperCase() || 'USD'} ${amount.toFixed(2)}`;
 }
 
-export default function BillingPage() {
+function BillingContent() {
   const searchParams = useSearchParams();
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
@@ -688,5 +686,13 @@ export default function BillingPage() {
         isLoading={cancelling}
       />
     </div>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BillingContent />
+    </Suspense>
   );
 }

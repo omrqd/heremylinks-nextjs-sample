@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from '../dashboard.module.css';
 import premiumStyles from './premium-modern.module.css';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export const dynamic = 'force-dynamic';
-
-export default function GetPremiumPage() {
+function GetPremiumContent() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
@@ -466,5 +464,13 @@ export default function GetPremiumPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function GetPremiumPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <GetPremiumContent />
+    </Suspense>
   );
 }
