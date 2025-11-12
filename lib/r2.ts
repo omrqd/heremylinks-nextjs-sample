@@ -15,7 +15,7 @@ const BUCKET_NAME = process.env.R2_BUCKET_NAME || '';
 const PUBLIC_URL = process.env.R2_PUBLIC_URL || ''; // Your R2 public domain
 
 // Upload types
-export type UploadType = 'profile' | 'link' | 'hero' | 'background' | 'video';
+export type UploadType = 'profile' | 'link' | 'hero' | 'background' | 'video' | 'product';
 
 /**
  * Upload a file to Cloudflare R2

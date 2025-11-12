@@ -253,6 +253,11 @@ export default function DashboardPage() {
   const [bioLinks, setBioLinks] = useState<BioLink[]>([]);
   const [showTikTokModal, setShowTikTokModal] = useState(false);
   const [tiktokUsername, setTiktokUsername] = useState('');
+  const [showPromoModal, setShowPromoModal] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showToolsDropdown, setShowToolsDropdown] = useState(false);
@@ -790,6 +795,43 @@ export default function DashboardPage() {
         console.error('Error saving bio:', error);
     }
     setIsEditingBio(false);
+  };
+
+  const handleRedeemPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoError('Please enter a promo code');
+      return;
+    }
+
+    setPromoLoading(true);
+    setPromoError('');
+    setPromoSuccess('');
+
+    try {
+      const response = await fetch('/api/promos/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: promoCode.trim() })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPromoSuccess(data.message);
+        setPromoCode('');
+        // Refresh the page after 2 seconds to show premium status
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setPromoError(data.error || 'Failed to redeem promo code');
+      }
+    } catch (error) {
+      console.error('Error redeeming promo code:', error);
+      setPromoError('Failed to redeem promo code. Please try again.');
+    } finally {
+      setPromoLoading(false);
+    }
   };
 
   const handleBioKeyPress = (e: React.KeyboardEvent) => {
@@ -1343,6 +1385,13 @@ export default function DashboardPage() {
             <span>Get Premium</span>
           </Link>
           )}
+          <button 
+            onClick={() => setShowPromoModal(true)}
+            className={styles.navItem}
+          >
+            <i className="fas fa-ticket-alt"></i>
+            <span>Promo Code</span>
+          </button>
           <Link href="/dashboard/help" className={styles.navItem}>
             <i className="fas fa-question-circle"></i>
             <span>Help Center</span>
@@ -3061,7 +3110,23 @@ export default function DashboardPage() {
                 <button 
                   className={styles.linkTypeCard}
                   onClick={() => handleLinkTypeSelect('image-top')}
+                  style={{ position: 'relative' }}
                 >
+                  <span style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    padding: '3px 8px',
+                    backgroundColor: '#8b5cf6',
+                    color: '#ffffff',
+                    borderRadius: '12px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    zIndex: 10,
+                    boxShadow: '0 2px 4px rgba(139, 92, 246, 0.3)'
+                  }}>Most Used</span>
                   <div className={styles.linkTypePreview}>
                     <div className={styles.imageTopPreview}>
                       <div className={styles.previewImageBox}></div>
@@ -3485,6 +3550,141 @@ export default function DashboardPage() {
                 >
                   <i className="fas fa-share-nodes"></i>
                   <span>Share</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Promo Code Modal */}
+      {showPromoModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border-2 border-purple-500/30 max-w-md w-full shadow-2xl shadow-purple-500/20 animate-slideUp">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                    <i className="fas fa-ticket-alt text-white text-xl"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">Redeem Promo Code</h3>
+                    <p className="text-slate-400 text-sm">Get instant premium access</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPromoModal(false);
+                    setPromoCode('');
+                    setPromoError('');
+                    setPromoSuccess('');
+                  }}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <i className="fas fa-times text-2xl"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              {/* Success Message */}
+              {promoSuccess && (
+                <div className="p-4 bg-green-500/20 border border-green-500/50 rounded-xl text-green-300 flex items-center gap-3 animate-slideDown">
+                  <i className="fas fa-check-circle text-2xl"></i>
+                  <div className="flex-1">
+                    <p className="font-semibold">{promoSuccess}</p>
+                    <p className="text-sm text-green-400/80 mt-1">Refreshing page...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {promoError && (
+                <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 flex items-center gap-3 animate-shake">
+                  <i className="fas fa-exclamation-circle text-2xl"></i>
+                  <p>{promoError}</p>
+                </div>
+              )}
+
+              {/* Input */}
+              <div>
+                <label className="block text-white font-semibold mb-2">
+                  Enter your promo code
+                </label>
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value.toUpperCase());
+                    setPromoError('');
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !promoLoading) {
+                      handleRedeemPromoCode();
+                    }
+                  }}
+                  placeholder="ENTER-CODE-HERE"
+                  className="w-full px-4 py-4 bg-slate-800/50 border-2 border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 outline-none transition-all font-mono text-lg text-center tracking-wider"
+                  disabled={promoLoading || !!promoSuccess}
+                />
+                <p className="text-slate-400 text-sm mt-2 text-center">
+                  Promo codes are not case-sensitive
+                </p>
+              </div>
+
+              {/* Info Box */}
+              <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <i className="fas fa-info-circle text-purple-400 text-xl mt-0.5"></i>
+                  <div className="flex-1">
+                    <p className="text-white font-semibold mb-1">What you get:</p>
+                    <ul className="text-slate-300 text-sm space-y-1">
+                      <li className="flex items-center gap-2">
+                        <i className="fas fa-check text-green-400 text-xs"></i>
+                        Premium templates and designs
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <i className="fas fa-check text-green-400 text-xs"></i>
+                        Advanced customization options
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <i className="fas fa-check text-green-400 text-xs"></i>
+                        Priority support
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <i className="fas fa-check text-green-400 text-xs"></i>
+                        And much more!
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleRedeemPromoCode}
+                  disabled={promoLoading || !!promoSuccess}
+                  className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 transform"
+                >
+                  {promoLoading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin mr-2"></i>
+                      Redeeming...
+                    </>
+                  ) : promoSuccess ? (
+                    <>
+                      <i className="fas fa-check mr-2"></i>
+                      Redeemed!
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-gift mr-2"></i>
+                      Redeem Code
+                    </>
+                  )}
                 </button>
               </div>
             </div>

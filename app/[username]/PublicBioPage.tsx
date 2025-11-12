@@ -45,6 +45,20 @@ interface SocialLink {
   icon: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  image: string | null;
+  product_type: string;
+  quantity: number | null;
+}
+
+interface CartItem extends Product {
+  cartQuantity: number;
+}
+
 interface PublicBioPageProps {
   user: User;
   links: BioLink[];
@@ -56,6 +70,38 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
   // Video refs for Safari compatibility
   const pageVideoRef = useRef<HTMLVideoElement>(null);
   const cardVideoRef = useRef<HTMLVideoElement>(null);
+  
+  // Products and cart state
+  const [products, setProducts] = useState<Product[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [activeTab, setActiveTab] = useState<'links' | 'shop'>('links');
+  const [sellerId, setSellerId] = useState<string>('');
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Fetch products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(`/api/users/${user.username}/products`);
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data.products || []);
+          setSellerId(data.sellerId || '');
+          // Auto-switch to shop tab if there are products and no links
+          if (data.products.length > 0 && links.length === 0) {
+            setActiveTab('shop');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    
+    fetchProducts();
+  }, [user.username, links.length]);
 
   // Page view tracking with heartbeat
   useEffect(() => {
@@ -164,6 +210,66 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
     // Open link
     window.open(formattedUrl, '_blank', 'noopener,noreferrer');
   };
+
+  // Cart functions
+  const addToCart = (product: Product) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.id === product.id);
+      if (existingItem) {
+        // Check if we can add more (respect quantity limit)
+        if (product.quantity !== null && existingItem.cartQuantity >= product.quantity) {
+          alert('Maximum quantity reached for this product');
+          return prevCart;
+        }
+        return prevCart.map(item =>
+          item.id === product.id
+            ? { ...item, cartQuantity: item.cartQuantity + 1 }
+            : item
+        );
+      } else {
+        return [...prevCart, { ...product, cartQuantity: 1 }];
+      }
+    });
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+  };
+
+  const updateCartQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    
+    setCart(prevCart =>
+      prevCart.map(item => {
+        if (item.id === productId) {
+          // Check quantity limit
+          if (item.quantity !== null && quantity > item.quantity) {
+            alert('Maximum quantity reached for this product');
+            return item;
+          }
+          return { ...item, cartQuantity: quantity };
+        }
+        return item;
+      })
+    );
+  };
+
+  const getTotalPrice = () => {
+    return cart.reduce((total, item) => total + (item.price * item.cartQuantity), 0);
+  };
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+    // Redirect to checkout page with cart data
+    const cartData = encodeURIComponent(JSON.stringify(cart));
+    window.location.href = `/checkout/${sellerId}?cart=${cartData}`;
+  };
+
+  const hasProducts = products.length > 0;
+  const showTabs = links.length > 0 && hasProducts;
 
   return (
     <div 
@@ -312,7 +418,39 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
           {user.bio && <p className={styles.profileBio} style={{ color: user.bioColor }}>{user.bio}</p>}
         </div>
 
+        {/* Tab Navigation - Show only if both links and products exist */}
+        {showTabs && (
+          <div className={styles.tabNavigation}>
+            <button
+              className={`${styles.tab} ${activeTab === 'links' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('links')}
+              style={{
+                borderBottomColor: activeTab === 'links' ? user.themeColor : 'transparent'
+              }}
+            >
+              <i className="fas fa-link"></i>
+              <span>Links</span>
+            </button>
+            <button
+              className={`${styles.tab} ${activeTab === 'shop' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('shop')}
+              style={{
+                borderBottomColor: activeTab === 'shop' ? user.themeColor : 'transparent'
+              }}
+            >
+              <i className="fas fa-shopping-bag"></i>
+              <span>Shop</span>
+              {cart.length > 0 && (
+                <span className={styles.cartBadge} style={{ backgroundColor: user.themeColor }}>
+                  {cart.length}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Links Section */}
+        {(!showTabs || activeTab === 'links') && (
         <div className={styles.linksSection}>
           {links.length === 0 ? (
             <div className={styles.noLinks}>
@@ -407,11 +545,180 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
             })
           )}
         </div>
+        )}
+
+        {/* Products Section */}
+        {(!showTabs || activeTab === 'shop') && hasProducts && (
+          <div className={styles.productsSection}>
+            {loadingProducts ? (
+              <div className={styles.loadingProducts}>
+                <i className="fas fa-spinner fa-spin"></i>
+                <p>Loading products...</p>
+              </div>
+            ) : products.length === 0 ? (
+              <div className={styles.noProducts}>
+                <i className="fas fa-box-open"></i>
+                <p>No products available</p>
+              </div>
+            ) : (
+              <>
+                {/* Product Links styled like bioLinks */}
+                {products.map((product) => (
+                  <button
+                    key={product.id}
+                    className={styles.productLink}
+                    onClick={() => addToCart(product)}
+                    disabled={product.quantity !== null && product.quantity === 0}
+                    style={{
+                      backgroundImage: product.image ? `url(${product.image})` : 'none',
+                      backgroundColor: product.image ? 'transparent' : '#ffffff',
+                      borderColor: user.themeColor,
+                      cursor: product.quantity !== null && product.quantity === 0 ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {/* Overlay for better text readability */}
+                    {product.image && <div className={styles.productOverlay}></div>}
+                    
+                    <div className={styles.productLinkContent}>
+                      <div className={styles.productLinkInfo}>
+                        <h3 className={styles.productLinkTitle}>{product.name}</h3>
+                        <p className={styles.productLinkPrice} style={{ color: product.image ? '#ffffff' : user.themeColor }}>
+                          ${product.price.toFixed(2)}
+                          {product.product_type === 'digital' && (
+                            <span className={styles.digitalTag}>
+                              <i className="fas fa-download"></i> Digital
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {product.quantity !== null && product.quantity === 0 ? (
+                        <div className={styles.outOfStock}>
+                          <i className="fas fa-times-circle"></i>
+                          <span>Out of Stock</span>
+                        </div>
+                      ) : (
+                        <div className={styles.addToCartIcon} style={{ 
+                          backgroundColor: product.image ? 'rgba(255, 255, 255, 0.9)' : user.themeColor,
+                          color: product.image ? user.themeColor : '#ffffff'
+                        }}>
+                          <i className="fas fa-cart-plus"></i>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+                
+                {/* Cart Summary Button - at bottom of products list */}
+                {cart.length > 0 && (
+                  <button
+                    className={styles.viewCartButton}
+                    onClick={() => setShowCart(true)}
+                    style={{
+                      backgroundColor: user.themeColor,
+                      borderColor: user.themeColor
+                    }}
+                  >
+                    <i className="fas fa-shopping-cart"></i>
+                    <span>View Cart ({cart.length} {cart.length === 1 ? 'item' : 'items'})</span>
+                    <span className={styles.cartTotal}>${getTotalPrice().toFixed(2)}</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Custom Text Section */}
         {user.customText && (
           <div className={styles.customTextSection}>
             <p className={styles.customText} style={{ color: user.customTextColor }}>{user.customText}</p>
+          </div>
+        )}
+
+        {/* Cart Modal */}
+        {showCart && (
+          <div className={styles.cartModalOverlay} onClick={() => setShowCart(false)}>
+            <div className={styles.cartModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.cartHeader}>
+                <h2 className={styles.cartTitle}>
+                  <i className="fas fa-shopping-cart"></i> Your Cart
+                </h2>
+                <button
+                  className={styles.cartClose}
+                  onClick={() => setShowCart(false)}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+
+              <div className={styles.cartContent}>
+                {cart.length === 0 ? (
+                  <div className={styles.emptyCart}>
+                    <i className="fas fa-shopping-cart"></i>
+                    <p>Your cart is empty</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.cartItems}>
+                      {cart.map((item) => (
+                        <div key={item.id} className={styles.cartItem}>
+                          {item.image && (
+                            <img src={item.image} alt={item.name} className={styles.cartItemImage} />
+                          )}
+                          <div className={styles.cartItemInfo}>
+                            <h4 className={styles.cartItemName}>{item.name}</h4>
+                            <p className={styles.cartItemPrice}>${item.price.toFixed(2)}</p>
+                          </div>
+                          <div className={styles.cartItemActions}>
+                            <div className={styles.quantityControl}>
+                              <button
+                                onClick={() => updateCartQuantity(item.id, item.cartQuantity - 1)}
+                                className={styles.quantityButton}
+                              >
+                                <i className="fas fa-minus"></i>
+                              </button>
+                              <span className={styles.quantityValue}>{item.cartQuantity}</span>
+                              <button
+                                onClick={() => updateCartQuantity(item.id, item.cartQuantity + 1)}
+                                className={styles.quantityButton}
+                                disabled={item.quantity !== null && item.cartQuantity >= item.quantity}
+                              >
+                                <i className="fas fa-plus"></i>
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => removeFromCart(item.id)}
+                              className={styles.removeButton}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className={styles.cartFooter}>
+                      <div className={styles.cartTotal}>
+                        <span className={styles.cartTotalLabel}>Total:</span>
+                        <span className={styles.cartTotalAmount} style={{ color: user.themeColor }}>
+                          ${getTotalPrice().toFixed(2)}
+                        </span>
+                      </div>
+                      <button
+                        className={styles.checkoutButton}
+                        onClick={handleCheckout}
+                        style={{
+                          backgroundColor: user.themeColor,
+                          borderColor: user.themeColor
+                        }}
+                      >
+                        <i className="fas fa-lock"></i> Proceed to Checkout
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

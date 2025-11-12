@@ -16,13 +16,13 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json();
-    const { sourceUsername } = body;
+    const { sourceUsername, sourceUserId } = body;
     
-    if (!sourceUsername) {
-      return NextResponse.json({ error: 'Source username required' }, { status: 400 });
+    if (!sourceUsername && !sourceUserId) {
+      return NextResponse.json({ error: 'Source username or user ID required' }, { status: 400 });
     }
     
-    console.log('📋 [Template Apply] User:', session.user.email, 'Source:', sourceUsername);
+    console.log('📋 [Template Apply] User:', session.user.email, 'Source:', sourceUserId || sourceUsername);
     
     // Get current user
     const { data: currentUser, error: currentUserError } = await supabase
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
-    // Get source template user
-    const { data: sourceUser, error: sourceError } = await supabase
+    // Get source template user (by ID or username)
+    let sourceQuery = supabase
       .from('users')
       .select(`
         template,
@@ -54,17 +54,23 @@ export async function POST(request: NextRequest) {
         hero_height,
         hide_profile_picture
       `)
-      .eq('username', sourceUsername)
-      .eq('is_published', true)
-      .single();
+      .eq('is_published', true);
+    
+    if (sourceUserId) {
+      sourceQuery = sourceQuery.eq('id', sourceUserId);
+    } else {
+      sourceQuery = sourceQuery.eq('username', sourceUsername);
+    }
+    
+    const { data: sourceUser, error: sourceError } = await sourceQuery.single();
     
     if (sourceError || !sourceUser) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
     
-    console.log('✨ [Template Apply] Applying template settings...');
+    console.log('✨ [Template Apply] Applying design settings...');
     
-    // Apply template settings (excluding profile_image, name, bio, links, etc.)
+    // Apply design settings (excluding profile_image, name, bio, links, etc.)
     const { error: updateError } = await supabase
       .from('users')
       .update({
@@ -94,19 +100,19 @@ export async function POST(request: NextRequest) {
     
     if (updateError) {
       console.error('❌ [Template Apply] Update error:', updateError);
-      return NextResponse.json({ error: 'Failed to apply template' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to apply design' }, { status: 500 });
     }
     
-    console.log('✅ [Template Apply] Template applied successfully!');
+    console.log('✅ [Template Apply] Design applied successfully!');
     
     return NextResponse.json({
       success: true,
-      message: 'Template applied successfully',
+      message: 'Design applied successfully',
     });
   } catch (error) {
     console.error('❌ [Template Apply] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to apply template' },
+      { error: 'Failed to apply design' },
       { status: 500 }
     );
   }

@@ -4,7 +4,7 @@ import { useState, useRef, forwardRef } from 'react';
 
 interface FileUploadProps {
   onUploadComplete: (fileUrl: string) => void;
-  uploadType: 'profile' | 'link';
+  uploadType: 'profile' | 'link' | 'product';
   className?: string;
   currentImage?: string;
   buttonText?: string;
@@ -132,8 +132,8 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
         id={uploadType === 'link' ? 'linkImageInput' : undefined}
       />
 
-      {/* For link uploads, show drag-and-drop zone instead of a button */}
-      {uploadType === 'link' && !previewUrl && (
+      {/* For link and product uploads, show drag-and-drop zone instead of a button */}
+      {(uploadType === 'link' || uploadType === 'product') && !previewUrl && (
         <div 
           className={`dropZone ${isDragging ? 'dragging' : ''}`}
           onDragOver={handleDragOver}
@@ -141,7 +141,7 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
           onDrop={handleDrop}
           onClick={triggerFileInput}
           role="button"
-          aria-label="Upload link image"
+          aria-label={`Upload ${uploadType} image`}
         >
           <div className="uploadPrompt">
             {isUploading ? (

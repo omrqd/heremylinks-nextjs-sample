@@ -225,6 +225,11 @@ export default function AdminTransactions() {
               <span>Emails</span>
             </Link>
             
+            <Link href="/admin/promos" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all">
+              <i className="fas fa-ticket-alt w-5"></i>
+              <span>Promo Codes</span>
+            </Link>
+            
             <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all">
               <i className="fas fa-cog w-5"></i>
               <span>Settings</span>

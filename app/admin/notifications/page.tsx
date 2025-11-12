@@ -12,6 +12,25 @@ interface User {
   name: string | null;
 }
 
+interface SentNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  link: string | null;
+  email_sent: boolean;
+  created_at: string;
+  created_by: {
+    id: string;
+    username: string;
+    email: string;
+    name: string | null;
+  } | null;
+  target_type: 'all' | 'specific';
+  target_users: User[];
+  notification_ids: string[];
+}
+
 export default function AdminNotifications() {
   const { status } = useSession();
   const router = useRouter();
@@ -19,6 +38,12 @@ export default function AdminNotifications() {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  
+  // Notification list state
+  const [notifications, setNotifications] = useState<SentNotification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
   
   // Form state
   const [targetType, setTargetType] = useState<'all' | 'specific'>('all');
@@ -32,12 +57,32 @@ export default function AdminNotifications() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Load notifications on mount
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
   // Load users when specific target is selected
   useEffect(() => {
     if (targetType === 'specific' && users.length === 0) {
       loadUsers();
     }
   }, [targetType]);
+
+  const loadNotifications = async () => {
+    setLoadingNotifications(true);
+    try {
+      const response = await fetch('/api/admin/notifications');
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
 
   const loadUsers = async () => {
     setLoadingUsers(true);
@@ -52,6 +97,41 @@ export default function AdminNotifications() {
     } finally {
       setLoadingUsers(false);
     }
+  };
+
+  const handleDelete = async (notificationIds: string[]) => {
+    if (!confirm('Are you sure you want to delete this notification? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/notifications?ids=${notificationIds.join(',')}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setSuccess('Notification deleted successfully');
+        loadNotifications();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to delete notification');
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      setError('Failed to delete notification');
+    }
+  };
+
+  const toggleRecipients = (notificationId: string) => {
+    setExpandedNotifications(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(notificationId)) {
+        newSet.delete(notificationId);
+      } else {
+        newSet.add(notificationId);
+      }
+      return newSet;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,10 +169,21 @@ export default function AdminNotifications() {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(
-          `Successfully sent ${data.notificationsSent} notification(s)` +
-          (sendEmail ? ` and ${data.emailsSent} email(s)` : '')
-        );
+        // Show success or partial success message
+        if (data.partialSuccess) {
+          setError(
+            data.message || 
+            `Sent ${data.emailsSent} of ${data.notificationsSent} emails. Some emails failed to send.`
+          );
+          if (data.emailErrors) {
+            console.error('Email errors:', data.emailErrors);
+          }
+        } else {
+          setSuccess(
+            `Successfully sent ${data.notificationsSent} notification(s)` +
+            (sendEmail ? ` and ${data.emailsSent} email(s)` : '')
+          );
+        }
         
         // Reset form
         setTitle('');
@@ -101,6 +192,10 @@ export default function AdminNotifications() {
         setTargetUserId('');
         setType('info');
         setSendEmail(false);
+        setShowForm(false);
+        
+        // Reload notifications list
+        loadNotifications();
       } else {
         setError(data.error || 'Failed to send notifications');
       }
@@ -169,6 +264,11 @@ export default function AdminNotifications() {
               <span>Emails</span>
             </Link>
             
+            <Link href="/admin/promos" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all">
+              <i className="fas fa-ticket-alt w-5"></i>
+              <span>Promo Codes</span>
+            </Link>
+            
             <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all">
               <i className="fas fa-cog w-5"></i>
               <span>Settings</span>
@@ -186,9 +286,18 @@ export default function AdminNotifications() {
 
       {/* Main Content */}
       <main className="ml-64 p-8">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Send Notifications</h1>
-          <p className="text-purple-300">Send notifications to users with optional email alerts</p>
+        <header className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Notifications</h1>
+            <p className="text-purple-300">Manage and send notifications to users</p>
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all flex items-center gap-2"
+          >
+            <i className={`fas ${showForm ? 'fa-times' : 'fa-plus'}`}></i>
+            {showForm ? 'Cancel' : 'Add Notification'}
+          </button>
         </header>
 
         {/* Success/Error Messages */}
@@ -218,8 +327,185 @@ export default function AdminNotifications() {
           </div>
         )}
 
+        {/* Notifications List */}
+        {!showForm && (
+          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-purple-500/20 overflow-hidden">
+            <div className="p-6 border-b border-purple-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Sent Notifications</h2>
+                  <p className="text-slate-400 text-sm mt-1">View and manage all sent notifications</p>
+                </div>
+                <div className="text-slate-400">
+                  <span className="text-2xl font-bold text-white">{notifications.length}</span> total
+                </div>
+              </div>
+            </div>
+
+            {loadingNotifications ? (
+              <div className="p-12 text-center">
+                <i className="fas fa-spinner fa-spin text-purple-400 text-4xl mb-4"></i>
+                <p className="text-slate-400">Loading notifications...</p>
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="p-12 text-center">
+                <i className="fas fa-bell-slash text-slate-600 text-5xl mb-4"></i>
+                <p className="text-slate-400 text-lg mb-2">No notifications sent yet</p>
+                <p className="text-slate-500 text-sm">Click "Add Notification" to send your first notification</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-purple-500/10">
+                {notifications.map((notification) => {
+                  const showRecipients = expandedNotifications.has(notification.id);
+                  
+                  return (
+                  <div key={notification.id} className="p-6 hover:bg-slate-800/30 transition-all">
+                    <div className="flex items-start gap-4">
+                      {/* Type Icon */}
+                      <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${
+                        notification.type === 'info' ? 'bg-blue-500/20 text-blue-400' :
+                        notification.type === 'success' ? 'bg-green-500/20 text-green-400' :
+                        notification.type === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        <i className={`fas ${
+                          notification.type === 'info' ? 'fa-info-circle' :
+                          notification.type === 'success' ? 'fa-check-circle' :
+                          notification.type === 'warning' ? 'fa-exclamation-triangle' :
+                          'fa-times-circle'
+                        } text-xl`}></i>
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-lg mb-1">{notification.title}</h3>
+                            <p className="text-slate-400 text-sm line-clamp-2">{notification.message}</p>
+                          </div>
+                          <button
+                            onClick={() => handleDelete(notification.notification_ids)}
+                            className="flex-shrink-0 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-all flex items-center gap-2"
+                          >
+                            <i className="fas fa-trash"></i>
+                            Delete
+                          </button>
+                        </div>
+
+                        {/* Meta Information */}
+                        <div className="flex flex-wrap items-center gap-4 mt-3">
+                          {/* Sent To */}
+                          <div className="flex items-center gap-2">
+                            <i className="fas fa-users text-purple-400"></i>
+                            <span className="text-slate-300 text-sm">
+                              {notification.target_type === 'all' ? (
+                                <span className="font-semibold">All Users ({notification.target_users.length})</span>
+                              ) : (
+                                <span>
+                                  <span className="font-semibold">Specific User:</span>{' '}
+                                  {notification.target_users[0]?.name || notification.target_users[0]?.username || 'Unknown'}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Email Sent */}
+                          {notification.email_sent && (
+                            <div className="flex items-center gap-2">
+                              <i className="fas fa-envelope text-purple-400"></i>
+                              <span className="text-slate-300 text-sm">
+                                {notification.target_type === 'all' 
+                                  ? `Email sent to ${notification.target_users.length} user${notification.target_users.length > 1 ? 's' : ''}`
+                                  : 'Email sent'
+                                }
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Link */}
+                          {notification.link && (
+                            <div className="flex items-center gap-2">
+                              <i className="fas fa-link text-purple-400"></i>
+                              <a 
+                                href={notification.link} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-purple-300 text-sm hover:text-purple-200 underline"
+                              >
+                                Action link
+                              </a>
+                            </div>
+                          )}
+
+                          {/* Created By */}
+                          {notification.created_by && (
+                            <div className="flex items-center gap-2">
+                              <i className="fas fa-user-shield text-purple-400"></i>
+                              <span className="text-slate-300 text-sm">
+                                by {notification.created_by.name || notification.created_by.username}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Date */}
+                          <div className="flex items-center gap-2 ml-auto">
+                            <i className="fas fa-clock text-purple-400"></i>
+                            <span className="text-slate-400 text-sm">
+                              {new Date(notification.created_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expandable Recipients List for "All Users" */}
+                    {notification.target_type === 'all' && notification.target_users.length > 0 && (
+                      <div className="mt-4 border-t border-purple-500/10 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => toggleRecipients(notification.id)}
+                          className="flex items-center gap-2 text-purple-300 hover:text-purple-200 text-sm font-semibold transition-all"
+                        >
+                          <i className={`fas fa-chevron-${showRecipients ? 'up' : 'down'}`}></i>
+                          {showRecipients ? 'Hide' : 'Show'} All Recipients ({notification.target_users.length})
+                        </button>
+                        
+                        {showRecipients && (
+                          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                            {notification.target_users.map((user: User, idx: number) => (
+                              <div key={idx} className="flex items-center gap-2 p-2 bg-slate-900/30 rounded-lg">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-semibold">
+                                  {(user.name || user.username || user.email)?.[0]?.toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white text-sm font-medium truncate">
+                                    {user.name || user.username || 'Unknown'}
+                                  </p>
+                                  <p className="text-slate-400 text-xs truncate">{user.email}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Send Form */}
-        <form onSubmit={handleSubmit} className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/20">
+        {showForm && (
+          <form onSubmit={handleSubmit} className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Target Selection */}
             <div className="lg:col-span-2">
@@ -295,27 +581,65 @@ export default function AdminNotifications() {
             <div className="lg:col-span-2">
               <label className="text-slate-300 font-semibold block mb-3">Notification Type</label>
               <div className="grid grid-cols-4 gap-3">
-                {[
-                  { value: 'info', icon: 'info-circle', color: 'blue' },
-                  { value: 'success', icon: 'check-circle', color: 'green' },
-                  { value: 'warning', icon: 'exclamation-triangle', color: 'yellow' },
-                  { value: 'error', icon: 'times-circle', color: 'red' },
-                ].map((typeOption) => (
-                  <label key={typeOption.value} className="cursor-pointer">
-                    <input
-                      type="radio"
-                      name="type"
-                      value={typeOption.value}
-                      checked={type === typeOption.value}
-                      onChange={(e) => setType(e.target.value as any)}
-                      className="sr-only peer"
-                    />
-                    <div className={`p-3 bg-slate-900/50 border-2 border-slate-700 rounded-lg peer-checked:border-${typeOption.color}-500 peer-checked:bg-${typeOption.color}-500/10 transition-all text-center`}>
-                      <i className={`fas fa-${typeOption.icon} text-2xl text-${typeOption.color}-400 mb-2`}></i>
-                      <p className="text-white text-sm font-semibold capitalize">{typeOption.value}</p>
-                    </div>
-                  </label>
-                ))}
+                <label className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="type"
+                    value="info"
+                    checked={type === 'info'}
+                    onChange={(e) => setType(e.target.value as any)}
+                    className="sr-only peer"
+                  />
+                  <div className="p-3 bg-slate-900/50 border-2 border-slate-700 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all text-center hover:bg-slate-800/50">
+                    <i className="fas fa-info-circle text-2xl text-blue-400 mb-2"></i>
+                    <p className="text-white text-sm font-semibold">Info</p>
+                  </div>
+                </label>
+
+                <label className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="type"
+                    value="success"
+                    checked={type === 'success'}
+                    onChange={(e) => setType(e.target.value as any)}
+                    className="sr-only peer"
+                  />
+                  <div className="p-3 bg-slate-900/50 border-2 border-slate-700 rounded-lg peer-checked:border-green-500 peer-checked:bg-green-500/10 transition-all text-center hover:bg-slate-800/50">
+                    <i className="fas fa-check-circle text-2xl text-green-400 mb-2"></i>
+                    <p className="text-white text-sm font-semibold">Success</p>
+                  </div>
+                </label>
+
+                <label className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="type"
+                    value="warning"
+                    checked={type === 'warning'}
+                    onChange={(e) => setType(e.target.value as any)}
+                    className="sr-only peer"
+                  />
+                  <div className="p-3 bg-slate-900/50 border-2 border-slate-700 rounded-lg peer-checked:border-yellow-500 peer-checked:bg-yellow-500/10 transition-all text-center hover:bg-slate-800/50">
+                    <i className="fas fa-exclamation-triangle text-2xl text-yellow-400 mb-2"></i>
+                    <p className="text-white text-sm font-semibold">Warning</p>
+                  </div>
+                </label>
+
+                <label className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="type"
+                    value="error"
+                    checked={type === 'error'}
+                    onChange={(e) => setType(e.target.value as any)}
+                    className="sr-only peer"
+                  />
+                  <div className="p-3 bg-slate-900/50 border-2 border-slate-700 rounded-lg peer-checked:border-red-500 peer-checked:bg-red-500/10 transition-all text-center hover:bg-slate-800/50">
+                    <i className="fas fa-times-circle text-2xl text-red-400 mb-2"></i>
+                    <p className="text-white text-sm font-semibold">Error</p>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -403,6 +727,7 @@ export default function AdminNotifications() {
             </button>
           </div>
         </form>
+        )}
       </main>
     </div>
   );

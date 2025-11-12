@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     // Build query
     let query = supabaseAdmin
       .from('users')
-      .select('id, username, email, name, is_premium, premium_plan_type, created_at, profile_image, is_admin, is_published, is_banned, ban_reason, banned_at', { count: 'exact' });
+      .select('id, username, email, name, is_premium, premium_plan_type, created_at, profile_image, is_admin, is_published, is_banned, ban_reason, banned_at, template, is_featured_creator, featured_creator_since', { count: 'exact' });
 
     // Apply search filter if provided
     if (search) {

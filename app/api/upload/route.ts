@@ -11,11 +11,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get upload type from query params (profile, link, or hero)
+    // Get upload type from query params (profile, link, hero, or product)
     const { searchParams } = new URL(req.url);
     const uploadType = searchParams.get('type') as UploadType | null;
     
-    if (!uploadType || !['profile', 'link', 'hero'].includes(uploadType)) {
+    if (!uploadType || !['profile', 'link', 'hero', 'product'].includes(uploadType)) {
       return NextResponse.json({ error: 'Invalid upload type' }, { status: 400 });
     }
 

@@ -21,6 +21,9 @@ interface User {
   is_banned: boolean;
   ban_reason: string | null;
   banned_at: string | null;
+  is_featured_creator: boolean;
+  template: string | null;
+  featured_creator_since: string | null;
 }
 
 export default function AdminUsers() {
@@ -137,6 +140,59 @@ export default function AdminUsers() {
 
   const handleUnban = (user: User) => {
     setUnbanModal(user);
+  };
+
+  const handleToggleFeaturedCreator = async (user: User) => {
+    const newStatus = !user.is_featured_creator;
+    
+    // Check if user profile is published
+    if (newStatus && !user.is_published) {
+      const message = `Cannot feature ${user.name || user.username}:\n\n` +
+        `❌ User's profile is not published\n\n` +
+        `The user needs to:\n` +
+        `1. Log in to their dashboard\n` +
+        `2. Publish their profile\n\n` +
+        `Then you can feature their design.`;
+      alert(message);
+      return;
+    }
+    
+    const confirmMessage = newStatus 
+      ? `Feature ${user.name || user.username}'s bio page design?\n\n` +
+        `Their complete design (colors, background, links) will be visible to premium users in the templates gallery.`
+      : `Remove ${user.name || user.username} from featured templates?`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}/featured`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFeatured: newStatus })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Reload users to reflect the change
+        loadUsers();
+        // Show success message with checkmark
+        alert(`✅ ${data.message}`);
+      } else {
+        // Show detailed error
+        alert(`❌ Error:\n\n${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error toggling featured creator:', error);
+      alert('❌ Failed to update featured creator status. Check console for details.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAddUser = () => {
@@ -359,6 +415,11 @@ export default function AdminUsers() {
               <span>Emails</span>
             </Link>
             
+            <Link href="/admin/promos" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all">
+              <i className="fas fa-ticket-alt w-5"></i>
+              <span>Promo Codes</span>
+            </Link>
+            
             <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all">
               <i className="fas fa-cog w-5"></i>
               <span>Settings</span>
@@ -496,6 +557,23 @@ export default function AdminUsers() {
                               Free
                             </span>
                           )}
+                          {user.is_featured_creator && (
+                            <span className="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full text-xs font-semibold flex items-center gap-1 w-fit border border-pink-500/30">
+                              <i className="fas fa-star text-xs"></i>
+                              Featured
+                            </span>
+                          )}
+                          {user.template && user.template !== 'null' && user.template !== '' ? (
+                            <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-semibold flex items-center gap-1 w-fit border border-blue-500/30" title={`Template: ${user.template}`}>
+                              <i className="fas fa-palette text-xs"></i>
+                              {user.template}
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 bg-slate-700/50 text-slate-400 rounded-full text-xs font-semibold flex items-center gap-1 w-fit border border-slate-600/30" title="No template set">
+                              <i className="fas fa-palette text-xs"></i>
+                              No Template
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="p-4 text-slate-400">{new Date(user.created_at).toLocaleDateString()}</td>
@@ -532,6 +610,18 @@ export default function AdminUsers() {
                               <i className="fas fa-ban"></i>
                             </button>
                           )}
+                          <button 
+                            onClick={() => handleToggleFeaturedCreator(user)}
+                            className={`p-2 hover:bg-slate-700 rounded-lg transition-all ${
+                              user.is_featured_creator 
+                                ? 'text-pink-400 bg-pink-500/10' 
+                                : 'text-slate-400'
+                            }`}
+                            title={user.is_featured_creator ? 'Remove from Featured Templates' : 'Add to Featured Templates'}
+                            disabled={saving}
+                          >
+                            <i className={user.is_featured_creator ? 'fas fa-star' : 'far fa-star'}></i>
+                          </button>
                           <button 
                             onClick={() => handleDelete(user)}
                             className="p-2 hover:bg-slate-700 rounded-lg text-red-400 transition-all" 

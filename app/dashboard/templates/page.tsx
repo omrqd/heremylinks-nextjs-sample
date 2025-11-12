@@ -10,27 +10,28 @@ import dashboardStyles from '../dashboard.module.css';
 import PremiumGate from '../components/PremiumGate';
 
 interface Template {
-  username: string;
-  name: string;
-  bio: string;
-  profileImage: string;
-  heroImage: string;
+  id: string;
+  creatorName: string;
+  creatorUsername: string;
+  creatorImage: string;
+  creatorBio: string;
   template: string;
   themeColor: string;
   backgroundColor: string;
   backgroundImage: string;
   backgroundVideo: string;
   cardBackgroundColor: string;
-  cardBackgroundImage: string;
-  cardBackgroundVideo: string;
-  usernameColor: string;
-  bioColor: string;
-  customTextColor: string;
-  heroHeight: number;
-  hideProfilePicture: boolean;
+  featuredSince: string;
+  previewUrl: string;
+  links: Array<{
+    id: string;
+    title: string;
+    url: string;
+    icon: string;
+    position: number;
+    is_active: boolean;
+  }>;
 }
-
-const TEMPLATE_USERS = ['omarnasr', 'moramoqa', 'morq', 'mrmoqa1'];
 
 export default function TemplatesPage() {
   const { data: session, status } = useSession();
@@ -83,57 +84,55 @@ export default function TemplatesPage() {
   
   const fetchTemplates = async () => {
     try {
-      const templatePromises = TEMPLATE_USERS.map(async (username) => {
-        const response = await fetch(`/api/templates/preview?username=${username}`);
-        if (response.ok) {
-          return await response.json();
-        }
-        return null;
-      });
-      
-      const results = await Promise.all(templatePromises);
-      const validTemplates = results.filter(t => t !== null);
-      setTemplates(validTemplates);
+      const response = await fetch('/api/templates/featured', { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        setTemplates(data.templates || []);
+      } else {
+        console.error('Failed to fetch featured templates:', response.statusText);
+        setTemplates([]);
+      }
     } catch (error) {
       console.error('Failed to fetch templates:', error);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
   };
   
   const handleApplyTemplate = async (template: Template) => {
-    if (!confirm(`Apply ${template.name}'s template? This will replace your current design settings (but keep your profile picture and content).`)) {
+    if (!confirm(`Apply ${template.creatorName}'s design? This will copy their colors, background, and template style (but keep your profile picture and links).`)) {
       return;
     }
     
-    setApplying(template.username);
+    setApplying(template.id);
     
     try {
       const response = await fetch('/api/templates/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sourceUsername: template.username,
+          sourceUserId: template.id,
         }),
       });
       
       if (response.ok) {
-        alert('✨ Template applied successfully! Redirecting to your dashboard...');
+        alert('✨ Design applied successfully! Redirecting to your dashboard...');
         router.push('/dashboard');
       } else {
         const data = await response.json();
-        alert(`Failed to apply template: ${data.error || 'Unknown error'}`);
+        alert(`Failed to apply design: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Failed to apply template:', error);
-      alert('Failed to apply template. Please try again.');
+      console.error('Failed to apply design:', error);
+      alert('Failed to apply design. Please try again.');
     } finally {
       setApplying(null);
     }
   };
   
   const handlePreview = (template: Template) => {
-    window.open(`/${template.username}`, '_blank');
+    window.open(`/${template.creatorUsername}`, '_blank');
   };
   
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -232,12 +231,12 @@ export default function TemplatesPage() {
                 onTouchMove={handleTouchMove}
               >
                 {templates.map((template) => (
-                  <div key={template.username} className={styles.templateCard}>
+                  <div key={template.id} className={styles.templateCard}>
                     <div className={styles.templatePreview}>
                       <iframe
-                        src={`/${template.username}`}
+                        src={`/${template.creatorUsername}`}
                         className={styles.templateIframe}
-                        title={`${template.name}'s template`}
+                        title={`${template.creatorName}'s design`}
                       />
                       <div className={styles.templateOverlay}>
                         <button 
@@ -252,20 +251,22 @@ export default function TemplatesPage() {
                     
                     <div className={styles.templateInfo}>
                       <div className={styles.templateAuthor}>
-                        {template.profileImage && (
-                          <img src={template.profileImage} alt={template.name} className={styles.authorAvatar} />
+                        {template.creatorImage && (
+                          <img src={template.creatorImage} alt={template.creatorName} className={styles.authorAvatar} />
                         )}
                         <div className={styles.authorDetails}>
-                          <h3>{template.name}</h3>
-                          <p>@{template.username}</p>
+                          <h3>{template.creatorName}</h3>
+                          <p>@{template.creatorUsername}</p>
                         </div>
                       </div>
                       
                       <div className={styles.templateFeatures}>
-                        <div className={styles.feature}>
-                          <i className="fas fa-palette"></i>
-                          <span>{template.template}</span>
-                        </div>
+                        {template.template && (
+                          <div className={styles.feature}>
+                            <i className="fas fa-palette"></i>
+                            <span>{template.template}</span>
+                          </div>
+                        )}
                         {template.backgroundVideo && (
                           <div className={styles.feature}>
                             <i className="fas fa-video"></i>
@@ -278,6 +279,12 @@ export default function TemplatesPage() {
                             <span>Image BG</span>
                           </div>
                         )}
+                        {template.links && template.links.length > 0 && (
+                          <div className={styles.feature}>
+                            <i className="fas fa-link"></i>
+                            <span>{template.links.length} Links</span>
+                          </div>
+                        )}
                       </div>
                       
                       <button 
@@ -285,7 +292,7 @@ export default function TemplatesPage() {
                         onClick={() => handleApplyTemplate(template)}
                         disabled={applying !== null}
                       >
-                        {applying === template.username ? (
+                        {applying === template.id ? (
                           <>
                             <i className="fas fa-spinner fa-spin"></i>
                             <span>Applying...</span>
@@ -293,7 +300,7 @@ export default function TemplatesPage() {
                         ) : (
                           <>
                             <i className="fas fa-magic"></i>
-                            <span>Apply Template</span>
+                            <span>Apply Design</span>
                           </>
                         )}
                       </button>
@@ -325,10 +332,11 @@ export default function TemplatesPage() {
         <div className={styles.infoSection}>
           <div className={styles.infoCard}>
             <i className="fas fa-info-circle"></i>
-            <h3>What happens when you apply a template?</h3>
+            <h3>What happens when you apply a design?</h3>
             <ul>
-              <li><i className="fas fa-check"></i> Your design settings will be updated</li>
-              <li><i className="fas fa-check"></i> Colors, backgrounds, and layouts will change</li>
+              <li><i className="fas fa-check"></i> Template style and layout will be copied</li>
+              <li><i className="fas fa-check"></i> Colors and backgrounds will be applied</li>
+              <li><i className="fas fa-check"></i> Background images/videos will be copied</li>
               <li><i className="fas fa-times"></i> Your profile picture stays the same</li>
               <li><i className="fas fa-times"></i> Your links and content won't be affected</li>
             </ul>

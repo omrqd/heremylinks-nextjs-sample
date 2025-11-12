@@ -108,31 +108,52 @@ export async function POST(request: Request) {
     let emailsSent = 0;
     let emailErrors: string[] = [];
 
-    if (sendEmail) {
-      const emailPromises = targetUsers.map(async (user) => {
+    if (sendEmail && targetUsers.length > 0) {
+      console.log(`Attempting to send ${targetUsers.length} emails...`);
+      
+      // Send emails individually to ensure delivery
+      for (const user of targetUsers) {
         try {
-          await resend.emails.send({
+          console.log(`Sending email to ${user.email} (${user.name || 'No name'})...`);
+          
+          const result = await resend.emails.send({
             from: 'HereMyLinks <notifications@heremylinks.com>',
             to: user.email,
             subject: title,
             html: getNotificationEmailHTML(user.name || user.email, title, message, type, link),
           });
+          
+          console.log(`✓ Email sent successfully to ${user.email}`, result);
           emailsSent++;
+          
+          // Add small delay between emails to avoid rate limiting
+          if (targetUsers.length > 1) {
+            await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+          }
         } catch (error: any) {
-          console.error(`Error sending email to ${user.email}:`, error);
-          emailErrors.push(`${user.email}: ${error.message}`);
+          console.error(`✗ Error sending email to ${user.email}:`, error);
+          emailErrors.push(`${user.email}: ${error.message || 'Unknown error'}`);
         }
-      });
-
-      await Promise.all(emailPromises);
+      }
+      
+      console.log(`Email sending complete. Sent: ${emailsSent}, Failed: ${emailErrors.length}`);
     }
 
-    return NextResponse.json({
+    // Prepare response with detailed information
+    const response: any = {
       success: true,
       notificationsSent: targetUsers.length,
       emailsSent: sendEmail ? emailsSent : 0,
-      emailErrors: emailErrors.length > 0 ? emailErrors : undefined,
-    });
+    };
+
+    // Add error details if any emails failed
+    if (emailErrors.length > 0) {
+      response.emailErrors = emailErrors;
+      response.partialSuccess = true;
+      response.message = `Sent ${emailsSent} of ${targetUsers.length} emails. ${emailErrors.length} failed.`;
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error sending notifications:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

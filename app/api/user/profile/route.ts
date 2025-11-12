@@ -26,6 +26,7 @@ interface User {
   bio_color: string | null;
   custom_text_color: string | null;
   is_published: boolean;
+  show_products: boolean;
   is_premium: boolean;
   premium_plan_type: string | null;
   premium_started_at: string | null;
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
       `SELECT id, username, email, name, bio, profile_image, hero_image, hero_height, hide_profile_picture,
               theme_color, background_color, template, background_image, background_video, 
               card_background_color, card_background_image, card_background_video, custom_text, 
-              username_color, bio_color, custom_text_color, is_published,
+              username_color, bio_color, custom_text_color, is_published, show_products,
               is_premium, premium_plan_type, premium_started_at, premium_expires_at,
               stripe_customer_id, stripe_subscription_id,
               is_admin, admin_role, admin_permissions,
@@ -117,6 +118,7 @@ export async function GET(request: NextRequest) {
         bioColor: userProfile.bio_color || '#6b7280',
         customTextColor: defaultCustomTextColor,
         isPublished: userProfile.is_published,
+        showProducts: userProfile.show_products || false,
         isPremium: userProfile.is_premium || false,
         premiumPlanType: userProfile.premium_plan_type,
         premiumStartedAt: userProfile.premium_started_at,
@@ -171,6 +173,7 @@ export async function PATCH(request: NextRequest) {
       customTextColor,
       isPublished,
       username,
+      showProducts,
     } = body;
 
     // If username is being updated, validate and check availability
@@ -390,6 +393,10 @@ export async function PATCH(request: NextRequest) {
     if (isPublished !== undefined) {
       updates.push('is_published = ?');
       values.push(isPublished);
+    }
+    if (showProducts !== undefined) {
+      updates.push('show_products = ?');
+      values.push(showProducts);
     }
 
     if (updates.length === 0) {
