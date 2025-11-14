@@ -78,6 +78,8 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
   const [activeTab, setActiveTab] = useState<'links' | 'shop'>('links');
   const [sellerId, setSellerId] = useState<string>('');
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showProductModal, setShowProductModal] = useState(false);
 
   // Fetch products
   useEffect(() => {
@@ -396,22 +398,28 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
           {/* Social Icons - Moved before bio */}
           {socials.length > 0 && (
             <div className={styles.socialIconsContainer}>
-              {socials.map((social) => (
-                <a
-                  key={social.id}
-                  href={social.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.socialIcon}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLinkClick(social.id, social.url);
-                  }}
-                  title={social.platform}
-                >
-                  <i className={social.icon}></i>
-                </a>
-              ))}
+              {socials.map((social) => {
+                // Convert old Twitter icon to new X icon
+                const iconClass = social.icon === 'fab fa-twitter' ? 'fab fa-x-twitter' : social.icon;
+                const platformName = social.platform === 'Twitter' ? 'X (Twitter)' : social.platform;
+                
+                return (
+                  <a
+                    key={social.id}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.socialIcon}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLinkClick(social.id, social.url);
+                    }}
+                    title={platformName}
+                  >
+                    <i className={iconClass}></i>
+                  </a>
+                );
+              })}
             </div>
           )}
           
@@ -424,9 +432,6 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
             <button
               className={`${styles.tab} ${activeTab === 'links' ? styles.tabActive : ''}`}
               onClick={() => setActiveTab('links')}
-              style={{
-                borderBottomColor: activeTab === 'links' ? user.themeColor : 'transparent'
-              }}
             >
               <i className="fas fa-link"></i>
               <span>Links</span>
@@ -434,14 +439,11 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
             <button
               className={`${styles.tab} ${activeTab === 'shop' ? styles.tabActive : ''}`}
               onClick={() => setActiveTab('shop')}
-              style={{
-                borderBottomColor: activeTab === 'shop' ? user.themeColor : 'transparent'
-              }}
             >
               <i className="fas fa-shopping-bag"></i>
               <span>Shop</span>
               {cart.length > 0 && (
-                <span className={styles.cartBadge} style={{ backgroundColor: user.themeColor }}>
+                <span className={styles.cartBadge}>
                   {cart.length}
                 </span>
               )}
@@ -467,8 +469,7 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
               const shouldUseBackgroundImage = isTemplate3 && link.image && (
                 link.layout === 'image-top' || 
                 link.layout === 'image-top-left' || 
-                link.layout === 'image-top-right' || 
-                link.layout === 'image-large'
+                link.layout === 'image-top-right'
               );
               const hasImageBackground = shouldUseBackgroundImage;
 
@@ -507,6 +508,16 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
                       )}
                       <span className={styles.linkTitle}>{link.title}</span>
                     </>
+                  ) : link.layout === 'image-large' && link.image ? (
+                    <>
+                      {/* Large Image Layout - Full featured hero */}
+                      <div className={styles.linkImageTop}>
+                        <img src={link.image} alt={link.title} />
+                      </div>
+                      <div className={styles.linkContent}>
+                        <span className={styles.linkTitle}>{link.title}</span>
+                      </div>
+                    </>
                   ) : (
                     <>
                       {/* Image Left Layout */}
@@ -517,7 +528,7 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
                       )}
 
                       {/* Image Top Layouts */}
-                      {link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
+                      {link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right') && (
                         <div className={styles.linkImageTop}>
                           <img src={link.image} alt={link.title} />
                         </div>
@@ -562,46 +573,38 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
               </div>
             ) : (
               <>
-                {/* Product Links styled like bioLinks */}
+                {/* Product Links styled like large image */}
                 {products.map((product) => (
                   <button
                     key={product.id}
                     className={styles.productLink}
-                    onClick={() => addToCart(product)}
-                    disabled={product.quantity !== null && product.quantity === 0}
-                    style={{
-                      backgroundImage: product.image ? `url(${product.image})` : 'none',
-                      backgroundColor: product.image ? 'transparent' : '#ffffff',
-                      borderColor: user.themeColor,
-                      cursor: product.quantity !== null && product.quantity === 0 ? 'not-allowed' : 'pointer'
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setShowProductModal(true);
                     }}
+                    disabled={product.quantity !== null && product.quantity === 0}
                   >
-                    {/* Overlay for better text readability */}
+                    {product.image && (
+                      <div className={styles.productImage}>
+                        <img src={product.image} alt={product.name} />
+                      </div>
+                    )}
                     {product.image && <div className={styles.productOverlay}></div>}
                     
                     <div className={styles.productLinkContent}>
-                      <div className={styles.productLinkInfo}>
-                        <h3 className={styles.productLinkTitle}>{product.name}</h3>
-                        <p className={styles.productLinkPrice} style={{ color: product.image ? '#ffffff' : user.themeColor }}>
-                          ${product.price.toFixed(2)}
-                          {product.product_type === 'digital' && (
-                            <span className={styles.digitalTag}>
-                              <i className="fas fa-download"></i> Digital
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      {product.quantity !== null && product.quantity === 0 ? (
-                        <div className={styles.outOfStock}>
+                      <h3 className={styles.productLinkTitle}>{product.name}</h3>
+                      <p className={styles.productLinkPrice}>
+                        ${product.price.toFixed(2)}
+                      </p>
+                      {product.product_type === 'digital' && (
+                        <span className={styles.digitalTagSmall}>
+                          <i className="fas fa-download"></i> Digital
+                        </span>
+                      )}
+                      {product.quantity !== null && product.quantity === 0 && (
+                        <div className={styles.outOfStockOverlay}>
                           <i className="fas fa-times-circle"></i>
                           <span>Out of Stock</span>
-                        </div>
-                      ) : (
-                        <div className={styles.addToCartIcon} style={{ 
-                          backgroundColor: product.image ? 'rgba(255, 255, 255, 0.9)' : user.themeColor,
-                          color: product.image ? user.themeColor : '#ffffff'
-                        }}>
-                          <i className="fas fa-cart-plus"></i>
                         </div>
                       )}
                     </div>
@@ -716,6 +719,79 @@ export default function PublicBioPage({ user, links, socials, isPremium }: Publi
                       </button>
                     </div>
                   </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Product Details Modal */}
+        {showProductModal && selectedProduct && (
+          <div className={styles.productModalOverlay} onClick={() => setShowProductModal(false)}>
+            <div className={styles.productModal} onClick={(e) => e.stopPropagation()}>
+              <button 
+                className={styles.productModalClose}
+                onClick={() => setShowProductModal(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+              
+              {selectedProduct.image && (
+                <div className={styles.productModalImage}>
+                  <img src={selectedProduct.image} alt={selectedProduct.name} />
+                </div>
+              )}
+              
+              <div className={styles.productModalContent}>
+                <h2 className={styles.productModalTitle}>{selectedProduct.name}</h2>
+                
+                <div className={styles.productModalMeta}>
+                  <p className={styles.productModalPrice}>${selectedProduct.price.toFixed(2)}</p>
+                  {selectedProduct.product_type === 'digital' && (
+                    <span className={styles.digitalBadge}>
+                      <i className="fas fa-download"></i> Digital Product
+                    </span>
+                  )}
+                </div>
+                
+                {selectedProduct.description && (
+                  <p className={styles.productModalDescription}>{selectedProduct.description}</p>
+                )}
+                
+                {selectedProduct.quantity !== null && selectedProduct.quantity === 0 ? (
+                  <div className={styles.outOfStockBanner}>
+                    <i className="fas fa-times-circle"></i>
+                    <span>This product is currently out of stock</span>
+                  </div>
+                ) : (
+                  <div className={styles.productModalActions}>
+                    <button
+                      className={styles.addToCartBtn}
+                      onClick={() => {
+                        addToCart(selectedProduct);
+                        setShowProductModal(false);
+                      }}
+                      style={{ backgroundColor: user.themeColor }}
+                    >
+                      <i className="fas fa-cart-plus"></i>
+                      Add to Cart
+                    </button>
+                    <button
+                      className={styles.buyNowBtn}
+                      onClick={() => {
+                        addToCart(selectedProduct);
+                        setShowProductModal(false);
+                        setShowCart(true);
+                      }}
+                      style={{ 
+                        borderColor: user.themeColor,
+                        color: user.themeColor
+                      }}
+                    >
+                      <i className="fas fa-bolt"></i>
+                      Buy Now
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

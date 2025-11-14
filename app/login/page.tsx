@@ -5,19 +5,32 @@ import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
-import styles from './login.module.css';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ToastProvider';
 import VerificationForm from './components/VerificationForm';
+import { 
+  ArrowLeft, 
+  Mail, 
+  Lock, 
+  Sparkles, 
+  Shield,
+  CheckCircle2,
+  Loader2,
+  Edit2
+} from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { showToast } = useToast();
-  const [step, setStep] = useState<'email' | 'password' | 'verification'>('email');
+  const [step, setStep] = useState<'email' | 'password' | 'verification' | 'forgot-password'>('email');
   const [emailUsername, setEmailUsername] = useState('');
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
+  const [title, setTitle] = useState('Welcome back');
   const [subtitle, setSubtitle] = useState('Log in to your HereMyLinks');
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -25,6 +38,9 @@ export default function LoginPage() {
   const [needsVerification, setNeedsVerification] = useState(false);
   const [canResendCode, setCanResendCode] = useState(true);
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [canSendReset, setCanSendReset] = useState(true);
+  const [resetCountdown, setResetCountdown] = useState(0);
 
   // Redirect authenticated users to appropriate dashboard
   useEffect(() => {
@@ -60,6 +76,36 @@ export default function LoginPage() {
     }
   }, [resendCountdown, canResendCode]);
 
+  // Countdown timer for forgot password rate limiting
+  useEffect(() => {
+    if (resetCountdown > 0) {
+      const timer = setTimeout(() => {
+        setResetCountdown(resetCountdown - 1);
+        // Update localStorage
+        localStorage.setItem('resetPasswordTime', Date.now().toString());
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (resetCountdown === 0 && !canSendReset) {
+      setCanSendReset(true);
+      localStorage.removeItem('resetPasswordTime');
+    }
+  }, [resetCountdown, canSendReset]);
+
+  // Check localStorage on mount for existing cooldown
+  useEffect(() => {
+    const lastResetTime = localStorage.getItem('resetPasswordTime');
+    if (lastResetTime) {
+      const elapsed = Math.floor((Date.now() - parseInt(lastResetTime)) / 1000);
+      const remaining = 30 - elapsed;
+      if (remaining > 0) {
+        setResetCountdown(remaining);
+        setCanSendReset(false);
+      } else {
+        localStorage.removeItem('resetPasswordTime');
+      }
+    }
+  }, []);
+
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailUsername.trim()) return;
@@ -77,26 +123,29 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.exists) {
-        if (!data.isVerified) {
-          // User exists but is not verified - show verification form
-          setNeedsVerification(true);
-          setStep('verification');
-          setSubtitle('Verify your email address');
-          showToast('Please verify your email before logging in', 'info');
-          // Send a new verification code
-          handleResendCode();
-        } else {
-          // Existing verified user - show login
-          setIsNewUser(false);
-          setSubtitle('Welcome back! Enter your password');
-          setStep('password');
-        }
-      } else {
-        // New user - show registration
-        setIsNewUser(true);
-        setSubtitle('Create your password');
-        setStep('password');
-      }
+                if (!data.isVerified) {
+                  // User exists but is not verified - show verification form
+                  setNeedsVerification(true);
+                  setStep('verification');
+                  setTitle('Verify Email');
+                  setSubtitle('Check your inbox for the code');
+                  showToast('Please verify your email before logging in', 'info');
+                  // Send a new verification code
+                  handleResendCode();
+                } else {
+                  // Existing verified user - show login
+                  setIsNewUser(false);
+                  setTitle('Welcome back');
+                  setSubtitle('Enter your password to continue');
+                  setStep('password');
+                }
+              } else {
+                // New user - show registration
+                setIsNewUser(true);
+                setTitle('Create Account');
+                setSubtitle('Set up your password');
+                setStep('password');
+              }
     } catch (error) {
       console.error('Error checking email:', error);
       showToast('Failed to verify email. Please try again.', 'error');
@@ -106,12 +155,72 @@ export default function LoginPage() {
   };
 
   const handleEditEmail = () => {
+    setTitle('Welcome back');
     setSubtitle('Log in to your HereMyLinks');
     setStep('email');
     setPassword('');
     setRepeatPassword('');
     setIsNewUser(false);
     setNeedsVerification(false);
+    setIsForgotPassword(false);
+  };
+
+  const handleForgotPassword = () => {
+    setIsForgotPassword(true);
+    setStep('forgot-password');
+    setTitle('Reset Password');
+    setSubtitle('We\'ll send you a reset link');
+    setEmailUsername('');
+  };
+
+  const handleBackToLogin = () => {
+    setIsForgotPassword(false);
+    setStep('email');
+    setTitle('Welcome back');
+    setSubtitle('Log in to your HereMyLinks');
+    setEmailUsername('');
+  };
+
+  const handleSendResetLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailUsername.trim()) return;
+
+    // Check if cooldown is active
+    if (!canSendReset) {
+      showToast(`Please wait ${resetCountdown} seconds before sending another request`, 'info');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailUsername }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        showToast(data.error || 'Failed to send reset link', 'error');
+        setIsLoading(false);
+        return;
+      }
+
+      showToast('Password reset link sent! Please check your email.', 'success');
+      
+      // Start 30-second cooldown
+      setCanSendReset(false);
+      setResetCountdown(30);
+      localStorage.setItem('resetPasswordTime', Date.now().toString());
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error sending reset link:', error);
+      showToast('Failed to send reset link. Please try again.', 'error');
+      setIsLoading(false);
+    }
   };
   
   const handleVerifyEmail = async () => {
@@ -290,10 +399,10 @@ export default function LoginPage() {
   // Show loading state while checking authentication
   if (status === 'loading') {
     return (
-      <div className={styles.loginContainer}>
-        <div className={styles.loadingScreen}>
-          <div className={styles.loadingSpinner}></div>
-          <p>Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
+          <p className="text-slate-600 font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -305,46 +414,61 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={styles.loginContainer}>
+    <div className="min-h-screen flex">
       {/* Left Side - Form */}
-      <div className={styles.loginLeft}>
-        <div className={styles.loginContent}>
-          <Link href="/" className={styles.logoLink}>
-            <Image src="/imgs/logo.png" alt="HereMyLinks Logo" width={180} height={45} className={styles.logo} />
+      <div className="flex-1 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <Link href="/" className="inline-block mb-8 hover:opacity-80 transition-opacity">
+            <Image src="/imgs/logo.png" alt="HereMyLinks Logo" width={180} height={45} priority />
           </Link>
           
-          <div className={styles.loginFormWrapper}>
-            <h1 className={styles.loginTitle}>Welcome back</h1>
-            <p className={styles.loginSubtitle}>{subtitle}</p>
+          {/* Form Card */}
+          <div>
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-slate-900 mb-2">{title}</h1>
+              <p className="text-slate-600">{subtitle}</p>
+            </div>
             
             {/* Show Google button only on email step */}
             {step === 'email' && (
               <>
-                <button className={styles.btnSocial} onClick={handleGoogleLogin} disabled={isLoading}>
-                  <svg width="20" height="20" viewBox="0 0 24 24">
+                <Button
+                  variant="outline"
+                  className="w-full h-12 border-2 hover:bg-slate-50 mb-4"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" className="mr-2">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
                   Continue with Google
-                </button>
+                </Button>
                 
-                <div className={styles.divider}>
-                  <span>OR</span>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-white text-slate-500 font-medium">OR</span>
+                  </div>
                 </div>
               </>
             )}
             
-            <form className={styles.loginForm} onSubmit={step === 'email' ? handleContinue : handleSubmit}>
+            <form onSubmit={step === 'email' ? handleContinue : handleSubmit} className="space-y-4">
               {/* Step 1: Email Input */}
               {step === 'email' && (
-                <div className={styles.formStep}>
-                  <div className={styles.formGroup}>
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input 
                       type="email" 
-                      className={styles.formInput} 
-                      placeholder="Email" 
+                      className="w-full h-12 pl-12 pr-4 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-slate-900 font-medium placeholder:text-slate-400"
+                      placeholder="Enter your email" 
                       value={emailUsername}
                       onChange={(e) => setEmailUsername(e.target.value)}
                       required
@@ -352,30 +476,46 @@ export default function LoginPage() {
                     />
                   </div>
                   
-                  <button type="submit" className={styles.btnPrimary} disabled={isCheckingEmail}>
-                    {isCheckingEmail ? 'Checking...' : 'Continue'}
-                  </button>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    disabled={isCheckingEmail}
+                  >
+                    {isCheckingEmail ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Checking...</>
+                    ) : (
+                      'Continue'
+                    )}
+                  </Button>
                 </div>
               )}
               
               {/* Step 2: Password Inputs */}
               {step === 'password' && (
-                <div className={`${styles.formStep} ${styles.formStepEnter}`}>
-                  <div className={styles.userEmailDisplay}>
-                    <span>{emailUsername}</span>
-                    <button type="button" className={styles.editEmailBtn} onClick={handleEditEmail}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  {/* Email Display with Edit */}
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-slate-500" />
+                      <span className="text-sm font-medium text-slate-700">{emailUsername}</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={handleEditEmail}
+                      className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Edit
                     </button>
                   </div>
                   
-                  <div className={styles.formGroup}>
+                  {/* Password Input */}
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input 
                       type="password" 
-                      className={styles.formInput} 
-                      placeholder="Password" 
+                      className="w-full h-12 pl-12 pr-4 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-slate-900 font-medium placeholder:text-slate-400"
+                      placeholder="Enter your password" 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -383,13 +523,14 @@ export default function LoginPage() {
                     />
                   </div>
                   
-                  {/* Only show repeat password for new users */}
+                  {/* Repeat Password for New Users */}
                   {isNewUser && (
-                    <div className={styles.formGroup}>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                       <input 
                         type="password" 
-                        className={styles.formInput} 
-                        placeholder="Repeat Password" 
+                        className="w-full h-12 pl-12 pr-4 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-slate-900 font-medium placeholder:text-slate-400"
+                        placeholder="Repeat your password" 
                         value={repeatPassword}
                         onChange={(e) => setRepeatPassword(e.target.value)}
                         required
@@ -398,18 +539,37 @@ export default function LoginPage() {
                     </div>
                   )}
                   
-                  <button type="submit" className={styles.btnPrimary} disabled={isLoading}>
-                    {isLoading ? 'Please wait...' : (isNewUser ? 'Sign Up' : 'Log In')}
-                  </button>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Please wait...</>
+                    ) : (
+                      <>{isNewUser ? <><Shield className="w-5 h-5 mr-2" /> Create Account</> : <><CheckCircle2 className="w-5 h-5 mr-2" /> Log In</>}</>
+                    )}
+                  </Button>
                 </div>
               )}
               
               {/* Step 3: Verification Code Input */}
               {step === 'verification' && (
-                <div className={styles.formStep}>
-                  <div className={styles.userEmailDisplay}>
-                    <span>{emailUsername}</span>
-                    <button type="button" className={styles.editEmailBtn} onClick={handleEditEmail}>Edit</button>
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  {/* Email Display with Edit */}
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-slate-500" />
+                      <span className="text-sm font-medium text-slate-700">{emailUsername}</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={handleEditEmail}
+                      className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Edit
+                    </button>
                   </div>
                   
                   <VerificationForm
@@ -423,20 +583,96 @@ export default function LoginPage() {
                   />
                 </div>
               )}
+
+              {/* Step 4: Forgot Password */}
+              {step === 'forgot-password' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  {/* Back Button */}
+                  <button
+                    type="button"
+                    onClick={handleBackToLogin}
+                    className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors mb-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to login
+                  </button>
+
+                  <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl mb-4">
+                    <p className="text-sm text-purple-900">
+                      Enter your email address and we'll send you a link to reset your password.
+                    </p>
+                  </div>
+
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input 
+                      type="email" 
+                      className="w-full h-12 pl-12 pr-4 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-slate-900 font-medium placeholder:text-slate-400"
+                      placeholder="Enter your email" 
+                      value={emailUsername}
+                      onChange={(e) => setEmailUsername(e.target.value)}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="button"
+                    onClick={handleSendResetLink}
+                    className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isLoading || !canSendReset}
+                  >
+                    {isLoading ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sending...</>
+                    ) : !canSendReset ? (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Wait {resetCountdown}s
+                      </>
+                    ) : (
+                      <><Mail className="w-5 h-5 mr-2" /> Send Reset Link</>
+                    )}
+                  </Button>
+                  
+                  {!canSendReset && (
+                    <p className="text-xs text-center text-slate-500 mt-2">
+                      You can send another request in {resetCountdown} seconds
+                    </p>
+                  )}
+                </div>
+              )}
             </form>
             
-            <div className={styles.loginFooter}>
-              <div className={styles.forgotLinks}>
-                <a href="#" className={styles.linkPurple}>Forgot password?</a>
+            {/* Footer Links */}
+            {step !== 'forgot-password' && (
+              <div className="mt-6 text-center">
+                <button 
+                  onClick={handleForgotPassword}
+                  className="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                >
+                  Forgot password?
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
       
       {/* Right Side - Image */}
-      <div className={styles.loginRight}>
-        <Image src="/imgs/login.jpg" alt="HereMyLinks Platform" fill style={{ objectFit: 'cover' }} priority />
+      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50">
+        {/* Image */}
+        <Image 
+          src="/imgs/feature3.jpg" 
+          alt="HereMyLinks Features" 
+          fill 
+          className="object-cover"
+          priority 
+        />
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-pink-600/20" />
       </div>
     </div>
   );

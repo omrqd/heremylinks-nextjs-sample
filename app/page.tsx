@@ -4,83 +4,128 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
-import styles from './home.module.css';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import TopBanner from '@/components/TopBanner';
-import FeaturesSlider from '@/components/FeaturesSlider';
-import ScrollAnimation from '@/components/ScrollAnimation';
+import { 
+  ArrowRight, 
+  BarChart3, 
+  Link2, 
+  Palette, 
+  Zap, 
+  Users, 
+  TrendingUp,
+  CheckCircle2,
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Sparkles,
+  Instagram,
+  Youtube,
+  Twitter,
+  Mail,
+  MousePointerClick,
+  Globe,
+  Rocket
+} from 'lucide-react';
 
 export default function Home() {
   const { data: session, status } = useSession();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [username, setUsername] = useState('');
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/' });
   };
 
+  const features = [
+    {
+      icon: Link2,
+      title: 'Unlimited Links',
+      description: 'Add as many links as you want to your bio page. No restrictions, no limits.',
+      gradient: 'from-purple-500 to-pink-500',
+    },
+    {
+      icon: Palette,
+      title: 'Custom Templates',
+      description: 'Choose from beautiful templates or create your own unique design.',
+      gradient: 'from-blue-500 to-cyan-500',
+    },
+    {
+      icon: BarChart3,
+      title: 'Advanced Analytics',
+      description: 'Track clicks, views, and engagement with powerful analytics tools.',
+      gradient: 'from-orange-500 to-red-500',
+    },
+    {
+      icon: Zap,
+      title: 'Lightning Fast',
+      description: 'Optimized for speed. Your page loads instantly everywhere.',
+      gradient: 'from-green-500 to-emerald-500',
+    },
+  ];
+
+  const stats = [
+    { label: 'Active Users', value: '50K+' },
+    { label: 'Links Created', value: '1M+' },
+    { label: 'Click-through Rate', value: '94%' },
+  ];
+
   return (
-    <>
-      <ScrollAnimation />
-      <div className="header">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      {/* Top Banner */}
         <TopBanner />
-        <div className={styles.navbar}>
-          <div className={styles.logo}>
-            <Image src="/imgs/logo.png" alt="HereMyLinks" width={240} height={60} priority />
+
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Image src="/imgs/logo.png" alt="HereMyLinks" width={180} height={45} priority className="h-10 w-auto" />
           </div>
-          <div className={styles.links}>
+
+            <div className="flex items-center gap-3">
             {status === 'loading' ? (
-              <div className={styles.loadingPlaceholder}></div>
+                <div className="h-10 w-32 bg-slate-200 animate-pulse rounded-lg" />
             ) : session ? (
-              <div className={styles.userMenuWrapper}>
+                <div className="relative">
                 <button
-                  className={styles.userMenuButton}
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   onBlur={() => setTimeout(() => setShowUserMenu(false), 200)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
                 >
                   {session.user?.image || (session.user as any)?.profileImage ? (
                     <Image
                       src={session.user?.image || (session.user as any)?.profileImage}
                       alt={session.user?.name || 'User'}
-                      width={40}
-                      height={40}
-                      className={styles.userAvatar}
+                        width={32}
+                        height={32}
+                        className="rounded-full"
                     />
                   ) : (
-                    <div className={styles.userAvatarPlaceholder}>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold">
                       {session.user?.name?.charAt(0).toUpperCase() || session.user?.email?.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className={styles.userName}>{session.user?.name || session.user?.email}</span>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={`${styles.chevron} ${showUserMenu ? styles.chevronUp : ''}`}
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
+                    <span className="text-sm font-medium hidden sm:block">{session.user?.name || session.user?.email}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
+
                 {showUserMenu && (
-                  <div className={styles.userDropdown}>
-                    <Link href="/dashboard" className={styles.dropdownItem}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="14" width="7" height="7"></rect>
-                        <rect x="3" y="14" width="7" height="7"></rect>
-                      </svg>
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg py-1">
+                      <Link 
+                        href="/dashboard" 
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-slate-50 transition-colors"
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
                       Dashboard
                     </Link>
-                    <button onClick={handleLogout} className={styles.dropdownItem}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                      </svg>
+                      <button 
+                        onClick={handleLogout} 
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-slate-50 transition-colors w-full text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
                       Logout
                     </button>
                   </div>
@@ -88,166 +133,451 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <Link href="/login" className={styles.getStartedBtn}>Get Started</Link>
-                <Link href="/login" className={styles.loginBtn}>Login</Link>
+                  <Button asChild variant="ghost">
+                    <Link href="/login">Login</Link>
+                  </Button>
+                  <Button asChild className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                    <Link href="/login">Get Started</Link>
+                  </Button>
               </>
             )}
           </div>
         </div>
       </div>
+      </nav>
 
-      <div className={styles.heroSection}>
-        <div className={styles.heroSectionText}>
-          more than just
-          a link, it&apos;s your
-          home on the web
-          <div className={styles.createYourLink}>
-            <div className={styles.linkInputWrapper}>
-              <span className={styles.linkPrefix}>heremylinks.com/</span>
-              <input type="text" placeholder="yourname" className={styles.linkInput} />
-              <Link href="/login" className={styles.linkButtonArrow} aria-label="Get Started">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/30 py-20 lg:py-32">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+          <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-4xl mx-auto">
+            {/* Badge */}
+            <Badge className="mb-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 px-4 py-2 text-sm">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Trusted by 50,000+ creators worldwide
+            </Badge>
+            
+            {/* Main Headline */}
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6">
+              <span className="block mb-2">Your Links,</span>
+              <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent animate-gradient">
+                All in One Place
+              </span>
+            </h1>
+            
+            {/* Subtitle */}
+            <p className="text-xl md:text-2xl text-slate-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+              Create a stunning landing page for your links in minutes. 
+              <span className="font-semibold text-slate-900"> Share everywhere, grow faster.</span>
+            </p>
+
+            {/* Username Input with Integrated Button */}
+            <div className="max-w-3xl mx-auto mb-8">
+              <div className="relative flex items-center bg-white rounded-2xl p-2 shadow-2xl border-2 border-slate-200 focus-within:border-purple-400 focus-within:shadow-purple-200 transition-all duration-300 hover:shadow-purple-100">
+                {/* Input Section */}
+                <div className="flex items-center flex-1 px-4 min-w-0">
+                  <div className="flex items-center gap-2 text-slate-500 text-sm font-semibold whitespace-nowrap select-none">
+                    <Globe className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                    <span className="hidden sm:inline">heremylinks.com/</span>
+                    <span className="sm:hidden">hml.com/</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="yourname"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="flex-1 outline-none py-3 px-3 text-lg font-bold text-slate-900 placeholder:text-slate-400 bg-transparent min-w-0"
+                  />
+                </div>
+
+                {/* Integrated Button */}
+                <Button 
+                  asChild 
+                  className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-bold text-base px-6 py-6 whitespace-nowrap group flex-shrink-0"
+                >
+                  <Link href="/login" className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                    <span className="hidden sm:inline">Get Started Free</span>
+                    <span className="sm:hidden">Start</span>
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
+                </Button>
+              </div>
+
+              {/* Helper Text Below */}
+              <p className="text-center text-sm text-slate-500 mt-3">
+                ✨ Create your link in <span className="font-semibold text-slate-700">under 2 minutes</span> • No credit card required
+              </p>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-slate-600">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                </div>
+                <span className="font-medium">Free forever</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                </div>
+                <span className="font-medium">No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                </div>
+                <span className="font-medium">Setup in 2 minutes</span>
+              </div>
+            </div>
+
+            {/* Visual Elements - Link Cards Preview */}
+            <div className="mt-16 relative">
+              <div className="flex items-center justify-center gap-4 flex-wrap">
+                {/* Mock Link Cards */}
+                <div className="w-64 h-16 bg-white rounded-2xl shadow-lg border-2 border-slate-200 flex items-center gap-3 px-4 hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="h-2.5 bg-slate-300 rounded w-3/4 mb-1.5" />
+                    <div className="h-2 bg-slate-200 rounded w-1/2" />
+                  </div>
+                </div>
+                
+                <div className="w-64 h-16 bg-white rounded-2xl shadow-lg border-2 border-purple-200 flex items-center gap-3 px-4 hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                    <Instagram className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="h-2.5 bg-slate-300 rounded w-3/4 mb-1.5" />
+                    <div className="h-2 bg-slate-200 rounded w-1/2" />
+                  </div>
+                </div>
+                
+                <div className="w-64 h-16 bg-white rounded-2xl shadow-lg border-2 border-slate-200 flex items-center gap-3 px-4 hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                    <Youtube className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="h-2.5 bg-slate-300 rounded w-3/4 mb-1.5" />
+                    <div className="h-2 bg-slate-200 rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div className={styles.heroSectionImage}>
-          <Image src="/imgs/hero-section-image.png" alt="HereMyLinks Platform" width={800} height={600} priority />
+
+        {/* CSS for animations */}
+        <style jsx>{`
+          @keyframes blob {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(20px, -50px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.9); }
+            75% { transform: translate(20px, 50px) scale(1.05); }
+          }
+          .animate-blob {
+            animation: blob 7s infinite;
+          }
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+          .animation-delay-4000 {
+            animation-delay: 4s;
+          }
+          @keyframes gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+          .animate-gradient {
+            background-size: 200% auto;
+            animation: gradient 3s linear infinite;
+          }
+        `}</style>
+      </section>
+
+      {/* Stats Section - Redesigned */}
+      <section className="relative py-16 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-grid-white/5" />
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Stat Card 1 - Active Users */}
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all group">
+              <CardContent className="p-8 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 mb-4 group-hover:scale-110 transition-transform">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-5xl font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent mb-2">
+                  50K+
+                </div>
+                <div className="text-slate-300 font-semibold text-lg">Active Users</div>
+                <p className="text-slate-400 text-sm mt-2">Growing every day</p>
+              </CardContent>
+            </Card>
+
+            {/* Stat Card 2 - Links Created */}
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all group">
+              <CardContent className="p-8 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 mb-4 group-hover:scale-110 transition-transform">
+                  <Link2 className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-5xl font-bold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent mb-2">
+                  1M+
+                </div>
+                <div className="text-slate-300 font-semibold text-lg">Links Created</div>
+                <p className="text-slate-400 text-sm mt-2">And counting...</p>
+              </CardContent>
+            </Card>
+
+            {/* Stat Card 3 - Click Rate */}
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all group">
+              <CardContent className="p-8 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 mb-4 group-hover:scale-110 transition-transform">
+                  <MousePointerClick className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-5xl font-bold bg-gradient-to-r from-green-300 to-emerald-300 bg-clip-text text-transparent mb-2">
+                  94%
+                </div>
+                <div className="text-slate-300 font-semibold text-lg">Click-through Rate</div>
+                <p className="text-slate-400 text-sm mt-2">Industry leading</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="mt-12 text-center">
+            <p className="text-slate-300 text-lg mb-4">
+              Join thousands of creators who trust HereMyLinks
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <div className="flex -space-x-2">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 border-2 border-slate-900" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-slate-900" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-400 border-2 border-slate-900" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-red-400 border-2 border-slate-900" />
+                <div className="w-10 h-10 rounded-full bg-slate-700 border-2 border-slate-900 flex items-center justify-center text-xs font-bold text-white">
+                  +50K
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <style jsx>{`
+          .bg-grid-white\/5 {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+          }
+        `}</style>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <Badge className="mb-4" variant="outline">Features</Badge>
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
+              Everything You Need to{' '}
+              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Grow Online
+              </span>
+            </h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Powerful features designed to help you connect with your audience and achieve your goals.
+            </p>
       </div>
 
-      <FeaturesSlider />
-
-      <div className={`${styles.analyticsSection} analytics-section`}>
-        <div className={styles.analyticsContainer}>
-          <div className={`${styles.analyticsLeft} analytics-left`}>
-            <div className={`${styles.analyticsCard} ${styles.cardOlive}`}>
-              <div className={styles.analyticsChart}>
-                <svg width="100%" height="100%" viewBox="0 0 400 300" preserveAspectRatio="none">
-                  <line x1="0" y1="60" x2="400" y2="60" stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
-                  <line x1="0" y1="120" x2="400" y2="120" stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
-                  <line x1="0" y1="180" x2="400" y2="180" stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
-                  <line x1="0" y1="240" x2="400" y2="240" stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
-                  
-                  <line x1="50" y1="0" x2="50" y2="300" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-                  <line x1="100" y1="0" x2="100" y2="300" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-                  <line x1="150" y1="0" x2="150" y2="300" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-                  <line x1="200" y1="0" x2="200" y2="300" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-                  <line x1="250" y1="0" x2="250" y2="300" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-                  <line x1="300" y1="0" x2="300" y2="300" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-                  <line x1="350" y1="0" x2="350" y2="300" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-                  
-                  <polyline className={styles.graphLine} points="0,250 30,240 60,230 90,210 120,180 150,190 180,160 210,140 240,120 270,100 300,80 330,60 360,40 400,20" 
-                    fill="none" stroke="#c5d952" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <div className={styles.analyticsInfo}>
-                <div className={styles.analyticsNumber}>43,500</div>
-                <div className={styles.analyticsLabel}>Clicks</div>
-              </div>
-            </div>
-          </div>
-
-          <div className={`${styles.analyticsRight} analytics-right`}>
-            <h2 className={styles.analyticsTitle}>Analyze your audience and keep them engaged</h2>
-            <p className={styles.analyticsDescription}>Track your engagement over time, monitor revenue and learn what&apos;s converting your audience. Make informed updates on the fly to keep them coming back.</p>
-            <Link href="/login" className={styles.analyticsCtaButton}>Get started for free</Link>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <Card key={index} className="border-slate-200 hover:shadow-lg transition-shadow duration-300 group">
+                  <CardContent className="p-6">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                    <p className="text-slate-600">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className={`${styles.getStartedSection} get-started-section`}>
-        <div className={styles.getStartedContainer}>
-          <div className={styles.getStartedContent}>
-            <span className={styles.getStartedBadge}>✨ Start for free</span>
-            <h2 className={styles.getStartedTitle}>Ready to build your link hub?</h2>
-            <p className={styles.getStartedDescription}>Join thousands of creators who use HereMyLinks to connect with their audience. Create your personalized link page in seconds.</p>
-            
-            <div className={styles.getStartedForm}>
-              <div className={styles.inputGroup}>
-                <span className={styles.inputPrefix}>heremylinks.com/</span>
-                <input type="text" placeholder="yourname" className={styles.getStartedInput} />
+      {/* Analytics CTA Section */}
+      <section className="py-24 bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Analytics Card */}
+            <div className="order-2 lg:order-1">
+              <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-0 shadow-2xl overflow-hidden">
+                <CardContent className="p-8">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 text-emerald-400">
+                      <TrendingUp className="w-5 h-5" />
+                      <span className="text-sm font-semibold">Analytics Dashboard</span>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-5xl font-bold text-white mb-2">43,500</div>
+                        <div className="text-slate-400">Total Clicks This Month</div>
+                      </div>
+                      
+                      {/* Simple Chart Visualization */}
+                      <div className="h-32 flex items-end gap-2">
+                        {[40, 60, 45, 80, 55, 90, 70, 95, 75, 100].map((height, i) => (
+                          <div key={i} className="flex-1 bg-gradient-to-t from-purple-500 to-pink-500 rounded-t-lg opacity-80 hover:opacity-100 transition-opacity" style={{ height: `${height}%` }} />
+                        ))}
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-700">
+                        <div>
+                          <div className="text-2xl font-bold text-white">2.4K</div>
+                          <div className="text-xs text-slate-400">New Visitors</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-white">94%</div>
+                          <div className="text-xs text-slate-400">Engagement</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-white">5.2K</div>
+                          <div className="text-xs text-slate-400">Conversions</div>
               </div>
-              <Link href="/login" className={styles.getStartedButton}>
-                Create my link
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
+              </div>
+            </div>
+                  </div>
+                </CardContent>
+              </Card>
+          </div>
+
+            {/* Text Content */}
+            <div className="order-1 lg:order-2">
+              <Badge className="mb-4" variant="outline">Analytics</Badge>
+              <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+                Understand Your{' '}
+                <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Audience
+                </span>
+              </h2>
+              <p className="text-xl text-slate-600 mb-6">
+                Track your engagement over time, monitor revenue, and learn what's converting your audience. Make informed updates on the fly to keep them coming back.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-600">Real-time click tracking and visitor analytics</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-600">Geographic and device breakdown insights</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-600">Revenue tracking for digital products</span>
+                </li>
+              </ul>
+              <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Link href="/login">
+                  Get Started Free <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="py-24 bg-gradient-to-br from-purple-600 to-pink-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black)]" />
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Badge className="mb-6 bg-white/20 text-white border-0">
+            <Sparkles className="w-3 h-3 mr-1" />
+            Start for Free
+          </Badge>
+          <h2 className="text-4xl lg:text-6xl font-bold mb-6">
+            Ready to Build Your Link Hub?
+          </h2>
+          <p className="text-xl text-purple-100 mb-10 max-w-2xl mx-auto">
+            Join thousands of creators who use HereMyLinks to connect with their audience. Create your personalized link page in seconds.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mb-8">
+            <div className="flex-1 flex items-center bg-white rounded-lg px-4 shadow-lg">
+              <span className="text-slate-500 text-sm font-medium whitespace-nowrap">heremylinks.com/</span>
+              <input
+                type="text"
+                placeholder="yourname"
+                className="flex-1 outline-none py-4 px-2 text-sm font-semibold text-slate-900"
+              />
+              </div>
+            <Button asChild size="lg" className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg">
+              <Link href="/login">
+                Create My Link <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
+            </Button>
             </div>
             
-            <div className={styles.getStartedFeatures}>
-              <div className={styles.featureItem}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
+          <div className="flex flex-wrap gap-6 justify-center text-sm text-purple-100">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
                 <span>No credit card required</span>
               </div>
-              <div className={styles.featureItem}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
                 <span>Setup in 2 minutes</span>
               </div>
-              <div className={styles.featureItem}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
                 <span>Cancel anytime</span>
-              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <footer className={`${styles.footer} footer`}>
-        <div className={styles.footerContainer}>
-          <div className={styles.footerLogo}>
-            <Image src="/imgs/logo.png" alt="Logo" width={200} height={50} />
+      {/* Footer */}
+      <footer className="bg-slate-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex items-center">
+              <Image src="/imgs/logo.png" alt="HereMyLinks" width={160} height={40} className="brightness-0 invert" />
           </div>
 
-          <div className={styles.footerSocial}>
-            <a href="#" className={styles.footerSocialIcon} aria-label="Instagram">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-              </svg>
-            </a>
-            <a href="#" className={styles.footerSocialIcon} aria-label="YouTube">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-              </svg>
-            </a>
-            <a href="#" className={styles.footerSocialIcon} aria-label="TikTok">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-              </svg>
-            </a>
-            <a href="#" className={styles.footerSocialIcon} aria-label="Twitter/X">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-              </svg>
-            </a>
-            <a href="#" className={styles.footerSocialIcon} aria-label="Email">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-              </svg>
+            <div className="flex gap-4">
+              <a href="#" className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <Instagram className="w-5 h-5" />
+              </a>
+              <a href="#" className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <Youtube className="w-5 h-5" />
+              </a>
+              <a href="#" className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <Twitter className="w-5 h-5" />
+              </a>
+              <a href="#" className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <Mail className="w-5 h-5" />
             </a>
           </div>
 
-          <div className={styles.footerLegal}>
-            <a href="#" className={styles.footerTerms}>terms of service</a>
-            <span className={styles.footerCopyright}>© 2025, All Rights Reserved</span>
+            <div className="flex items-center gap-6 text-sm text-slate-400">
+              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+              <span>© 2025 HereMyLinks</span>
+            </div>
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }
-

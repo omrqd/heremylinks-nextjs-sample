@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import FileUpload from '@/components/FileUpload';
+import FileUploadWithCrop from '@/components/FileUploadWithCrop';
 import dynamic from 'next/dynamic';
 import { CropData } from '@/components/ImageCropModal';
 import { useRouter } from 'next/navigation';
@@ -90,8 +91,7 @@ function SortableLinkItem({ link, onDelete, onUpdate, selectedTemplate }: { link
   const shouldUseBackgroundImage = isTemplate3 && link.image && (
     link.layout === 'image-top' || 
     link.layout === 'image-top-left' || 
-    link.layout === 'image-top-right' || 
-    link.layout === 'image-large'
+    link.layout === 'image-top-right'
   );
   const hasImageBackground = shouldUseBackgroundImage;
 
@@ -123,13 +123,29 @@ function SortableLinkItem({ link, onDelete, onUpdate, selectedTemplate }: { link
       className={`${styles.bioLinkItem} ${layoutClass} ${isDragging ? styles.dragging : ''} ${link.isTransparent ? styles.transparentLink : ''} ${hasImageBackground ? styles.hasImage : ''}`}
       onClick={handleLinkClick}
     >
-      {/* Image Top - Outside linkInner wrapper (only for non-template3) */}
-      {!isTemplate3 && link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right' || link.layout === 'image-large') && (
+      {/* Image Top - Outside linkInner wrapper (only for non-template3 and not image-large) */}
+      {!isTemplate3 && link.image && (link.layout === 'image-top' || link.layout === 'image-top-left' || link.layout === 'image-top-right') && (
         <div className={styles.previewLinkImageTop}>
           <img src={link.image} alt={link.title} />
         </div>
       )}
 
+      {/* Large Image Layout - Special structure (works on all templates) */}
+      {link.layout === 'image-large' && link.image && (
+        <>
+          <div className={styles.previewLinkImageTop}>
+            <img src={link.image} alt={link.title} />
+          </div>
+          <div className={styles.linkInner} style={{ ...linkStyle, background: 'transparent', border: 'none' }}>
+            <div className={styles.linkContent}>
+              <span className={styles.linkTitle}>{link.title}</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Standard layouts */}
+      {(link.layout !== 'image-large' && !hasImageBackground) && (
       <div className={styles.linkInner} style={linkStyle}>
       {/* Template3: Render icon badge in top-right and title in bottom-left */}
       {isTemplate3 && hasImageBackground ? (
@@ -166,6 +182,19 @@ function SortableLinkItem({ link, onDelete, onUpdate, selectedTemplate }: { link
         </>
       )}
       </div>
+      )}
+
+      {/* Template3 with background image */}
+      {isTemplate3 && hasImageBackground && (
+      <div className={styles.linkInner} style={linkStyle}>
+        {link.icon && (
+          <div className={styles.linkIcon}>
+            <i className={link.icon}></i>
+          </div>
+        )}
+        <span className={styles.linkTitle}>{link.title}</span>
+      </div>
+      )}
 
       {/* Link Color Controls */}
       {showColorControls && (
@@ -1141,7 +1170,7 @@ export default function DashboardPage() {
   const socialPlatforms = [
     { name: 'Instagram', icon: 'fab fa-instagram' },
     { name: 'Facebook', icon: 'fab fa-facebook-f' },
-    { name: 'Twitter', icon: 'fab fa-twitter' },
+    { name: 'X (Twitter)', icon: 'fab fa-x-twitter' },
     { name: 'TikTok', icon: 'fab fa-tiktok' },
     { name: 'YouTube', icon: 'fab fa-youtube' },
     { name: 'LinkedIn', icon: 'fab fa-linkedin-in' },
@@ -2266,26 +2295,32 @@ export default function DashboardPage() {
               {/* Social Icons - Moved before bio */}
               {socialLinks.length > 0 && (
                 <div className={styles.socialIconsContainer}>
-                  {socialLinks.map((social) => (
-                    <div key={social.id} className={styles.socialIconWrapper}>
-                      <a 
-                        href={social.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className={styles.socialIcon}
-                        title={social.platform}
-                      >
-                        <i className={social.icon}></i>
-                      </a>
-                      <button 
-                        className={styles.deleteSocialBtn}
-                        onClick={() => deleteSocialLink(social.id)}
-                        title="Remove social link"
-                      >
-                        <i className="fas fa-times"></i>
-                      </button>
-                    </div>
-                  ))}
+                  {socialLinks.map((social) => {
+                    // Convert old Twitter icon to new X icon
+                    const iconClass = social.icon === 'fab fa-twitter' ? 'fab fa-x-twitter' : social.icon;
+                    const platformName = social.platform === 'Twitter' ? 'X (Twitter)' : social.platform;
+                    
+                    return (
+                      <div key={social.id} className={styles.socialIconWrapper}>
+                        <a 
+                          href={social.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className={styles.socialIcon}
+                          title={platformName}
+                        >
+                          <i className={iconClass}></i>
+                        </a>
+                        <button 
+                          className={styles.deleteSocialBtn}
+                          onClick={() => deleteSocialLink(social.id)}
+                          title="Remove social link"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -3208,13 +3243,31 @@ export default function DashboardPage() {
                   <label className={styles.formLabel}>
                     Link Image {selectedLayout.includes('large') && <span className={styles.requiredField}>*</span>}
                   </label>
-                  <FileUpload
-                    onUploadComplete={handleLinkImageUpload}
-                    uploadType="link"
-                    currentImage={linkImage}
-                    hideButton={false}
-                    showPreview={true}
-                  />
+                  {selectedLayout === 'image-large' ? (
+                    <>
+                      <FileUploadWithCrop
+                        onUploadComplete={handleLinkImageUpload}
+                        uploadType="link"
+                        currentImage={linkImage}
+                        hideButton={false}
+                        showPreview={true}
+                        enableCrop={true}
+                        cropAspectRatio={4 / 5}
+                      />
+                      <p className={styles.helperText} style={{ marginTop: '8px' }}>
+                        <i className="fas fa-crop" style={{ marginRight: '6px', color: '#667eea' }}></i>
+                        You'll be able to crop and select the exact area that will appear in your Large Image
+                      </p>
+                    </>
+                  ) : (
+                    <FileUpload
+                      onUploadComplete={handleLinkImageUpload}
+                      uploadType="link"
+                      currentImage={linkImage}
+                      hideButton={false}
+                      showPreview={true}
+                    />
+                  )}
                 </div>
               )}
             </div>

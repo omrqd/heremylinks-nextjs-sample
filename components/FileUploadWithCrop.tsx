@@ -1,0 +1,257 @@
+'use client';
+
+import { useState, useRef, forwardRef } from 'react';
+import ImageCropper from './ImageCropper';
+
+interface FileUploadWithCropProps {
+  onUploadComplete: (fileUrl: string) => void;
+  uploadType: 'profile' | 'link' | 'product';
+  className?: string;
+  currentImage?: string;
+  buttonText?: string;
+  hideButton?: boolean;
+  showPreview?: boolean;
+  enableCrop?: boolean; // New prop to enable cropping
+  cropAspectRatio?: number; // Aspect ratio for cropping
+}
+
+const FileUploadWithCrop = forwardRef<HTMLInputElement, FileUploadWithCropProps>(({
+  onUploadComplete,
+  uploadType,
+  className = '',
+  currentImage,
+  buttonText = 'Upload Image',
+  hideButton = false,
+  showPreview = true,
+  enableCrop = false,
+  cropAspectRatio = 16 / 9
+}, ref) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage || null);
+  const localFileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  
+  // Use the forwarded ref if provided, otherwise use local ref
+  const fileInputRef = (ref as React.RefObject<HTMLInputElement>) || localFileInputRef;
+
+  const uploadImage = async (fileToUpload: File | Blob, originalFileName?: string) => {
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      
+      // If it's a Blob (from cropping), convert to File
+      if (fileToUpload instanceof Blob && !(fileToUpload instanceof File)) {
+        const fileName = originalFileName || `cropped-image-${Date.now()}.jpg`;
+        const file = new File([fileToUpload], fileName, { type: 'image/jpeg' });
+        formData.append('file', file);
+      } else {
+        formData.append('file', fileToUpload);
+      }
+
+      const response = await fetch(`/api/upload?type=${uploadType}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      setPreviewUrl(data.fileUrl);
+      onUploadComplete(data.fileUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const processFile = async (file: File) => {
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+
+    // Check file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
+    }
+
+    setError(null);
+
+    // If cropping is enabled, show cropper
+    if (enableCrop) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+        setShowCropper(true);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Upload directly without cropping
+      await uploadImage(file);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  // Drag & drop handlers
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setShowCropper(false);
+    setImageToCrop(null);
+    await uploadImage(croppedBlob, 'cropped-large-image.jpg');
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setImageToCrop(null);
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <>
+      <div className={`file-upload ${className}`}>
+        {showPreview && previewUrl && (
+          <div className="imagePreview">
+            <img 
+              src={previewUrl} 
+              alt="Preview" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+            <button 
+              onClick={() => {
+                setPreviewUrl(null);
+                onUploadComplete('');
+              }}
+              className="removeImageBtn"
+              type="button"
+            >
+              <i className="fas fa-times" />
+            </button>
+          </div>
+        )}
+        
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          style={{ display: 'none' }}
+          id={uploadType === 'link' ? 'linkImageInput' : undefined}
+        />
+
+        {/* For link and product uploads, show drag-and-drop zone instead of a button */}
+        {(uploadType === 'link' || uploadType === 'product') && !previewUrl && (
+          <div 
+            className={`dropZone ${isDragging ? 'dragging' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={triggerFileInput}
+            role="button"
+            aria-label={`Upload ${uploadType} image`}
+          >
+            <div className="uploadPrompt">
+              {isUploading ? (
+                <i className="fas fa-spinner fa-spin" />
+              ) : (
+                <i className="fas fa-cloud-upload-alt" />
+              )}
+              <p>
+                {isUploading 
+                  ? 'Uploading image…' 
+                  : enableCrop 
+                    ? 'Drag and drop an image here, or click to upload (you\'ll be able to crop it)'
+                    : 'Drag and drop an image here, or click to upload'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* For profile uploads, optionally show a minimal button if requested */}
+        {uploadType === 'profile' && !hideButton && !previewUrl && (
+          <button
+            type="button"
+            onClick={triggerFileInput}
+            disabled={isUploading}
+            className="upload-button"
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: isUploading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {isUploading ? (
+              <>
+                <i className="fas fa-spinner fa-spin" style={{ marginRight: 8 }} /> Uploading...
+              </>
+            ) : buttonText}
+          </button>
+        )}
+
+        {error && <p className="error-message" style={{ color: 'red', marginTop: '5px', fontSize: '14px' }}>{error}</p>}
+      </div>
+
+      {/* Image Cropper Modal */}
+      {showCropper && imageToCrop && (
+        <ImageCropper
+          image={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          aspectRatio={cropAspectRatio}
+        />
+      )}
+    </>
+  );
+});
+
+FileUploadWithCrop.displayName = 'FileUploadWithCrop';
+
+export default FileUploadWithCrop;
+

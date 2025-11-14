@@ -189,10 +189,10 @@ export default function CheckoutPage() {
           <div className={styles.loadingBar}>
             <div className={styles.loadingProgress}></div>
           </div>
-          <p className={styles.successMessage} style={{ fontSize: '14px', marginTop: '20px', color: '#6b7280' }}>
-            <strong>Order ID:</strong> {orderId.substring(0, 8).toUpperCase()}
+          <p className={styles.successMessage} style={{ fontSize: '15px', marginTop: '24px', color: 'rgba(255, 255, 255, 0.5)' }}>
+            <strong style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Order ID:</strong> {orderId.substring(0, 8).toUpperCase()}
             <br />
-            <strong>Amount:</strong> ${getTotalPrice().toFixed(2)}
+            <strong style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Amount:</strong> ${getTotalPrice().toFixed(2)}
           </p>
           <p className={styles.warningNote}>
             <i className="fas fa-info-circle"></i>
@@ -208,8 +208,8 @@ export default function CheckoutPage() {
     <div className={styles.container}>
       <div className={styles.checkoutCard}>
         <div className={styles.header}>
-          <Image src="/imgs/logo.png" alt="Logo" width={120} height={30} priority />
-          <h1 className={styles.title}>Checkout</h1>
+          <Image src="/imgs/white-logo.png" alt="HereMyLinks" width={180} height={45} priority />
+          <h1 className={styles.title}>Secure Checkout</h1>
         </div>
 
         {error && (
